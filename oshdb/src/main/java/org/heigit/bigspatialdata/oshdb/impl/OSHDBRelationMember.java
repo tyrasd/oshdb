@@ -5,26 +5,26 @@ import org.heigit.bigspatialdata.oshdb.OSHDBMember;
 import org.heigit.bigspatialdata.oshdb.osh.OSHEntity;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 
-public class OSMRelationMember extends OSHDBMember {
+public class OSHDBRelationMember extends OSHDBMember {
 
   private OSMType type;
   private OSHDBRole role;
   private OSHEntity entity = null;
 
-  public OSMRelationMember(long id, OSMType type, int role) {
+  public OSHDBRelationMember(long id, OSMType type, int role) {
     super(id);
     this.type = type;
     this.role = new OSHDBRole(role);
   }
 
-  public OSMRelationMember(OSHEntity entity, int role) {
+  public OSHDBRelationMember(OSHEntity entity, int role) {
     super(entity.getId());
     this.type = entity.getType();
     this.entity = entity;
     this.role = new OSHDBRole(role);
   }
 
-  public OSMRelationMember(OSHDBMember member) {
+  public OSHDBRelationMember(OSHDBMember member) {
     super(member.getId());
     if (member.getEntity() != null) {
       this.type = member.getEntity().getType();
