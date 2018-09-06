@@ -1,4 +1,4 @@
-package org.heigit.bigspatialdata.oshdb.util;
+package org.heigit.bigspatialdata.oshdb;
 
 import java.io.Serializable;
 import java.time.Instant;

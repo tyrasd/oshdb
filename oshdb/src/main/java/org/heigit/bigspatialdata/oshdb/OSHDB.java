@@ -1,5 +1,9 @@
 package org.heigit.bigspatialdata.oshdb;
 
+import java.util.Comparator;
+import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
+import org.heigit.bigspatialdata.oshdb.util.SortOrder;
+
 public abstract class OSHDB {
 
   public static final int MAXZOOM = 15;
@@ -7,6 +11,16 @@ public abstract class OSHDB {
   // osm only stores 7 decimals for each coordinate
   public static final long GEOM_PRECISION_TO_LONG = 10000000L;
   public static final double GEOM_PRECISION = 1.0 / GEOM_PRECISION_TO_LONG;
+
+  public static long doubleToLong(double val) {
+    return (long) (val * OSHDB.GEOM_PRECISION_TO_LONG);
+  }
+
+  public static double longToDouble(long val) {
+    return (double) (val * GEOM_PRECISION);
+  }
+
+  public static final SortOrder sortOrder = SortOrder.DESC;
 
   /**
    * Returns various metadata properties of this OSHDB instance

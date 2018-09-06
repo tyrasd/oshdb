@@ -1,8 +1,8 @@
 package org.heigit.bigspatialdata.oshdb.util.tagInterpreter;
 
 import java.io.Serializable;
+import org.heigit.bigspatialdata.oshdb.OSHDBMember;
 import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
-import org.heigit.bigspatialdata.oshdb.osm.OSMMember;
 import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
 
 /**
@@ -21,9 +21,9 @@ public interface TagInterpreter extends Serializable {
 
   boolean hasInterestingTagKey(OSMEntity osm);
 
-  boolean isMultipolygonOuterMember(OSMMember osmMember);
+  boolean isMultipolygonOuterMember(OSHDBMember osmMember);
 
-  boolean isMultipolygonInnerMember(OSMMember osmMember);
+  boolean isMultipolygonInnerMember(OSHDBMember osmMember);
 
   boolean isOldStyleMultipolygon(OSMRelation osmRelation);
 }

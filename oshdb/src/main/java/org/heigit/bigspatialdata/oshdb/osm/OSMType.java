@@ -6,10 +6,10 @@ public enum OSMType {
   WAY(1),
   RELATION(2);
 
-  private final int value;
+  private final int type;
 
   OSMType(final int value) {
-    this.value = value;
+    this.type = value;
   }
 
   public static OSMType fromInt(final int value) {
@@ -26,7 +26,7 @@ public enum OSMType {
     
   }
 
-  public final int intValue() {
-    return this.value;
+  public final int intType() {
+    return this.type;
   }
 }

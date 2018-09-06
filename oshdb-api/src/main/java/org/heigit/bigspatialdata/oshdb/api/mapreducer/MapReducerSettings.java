@@ -2,14 +2,13 @@ package org.heigit.bigspatialdata.oshdb.api.mapreducer;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.Polygonal;
-import org.heigit.bigspatialdata.oshdb.api.generic.function.SerializablePredicate;
-import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
-import org.heigit.bigspatialdata.oshdb.osm.OSMType;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
-
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.regex.Pattern;
+import org.heigit.bigspatialdata.oshdb.OSHDBBoundingBox;
+import org.heigit.bigspatialdata.oshdb.api.generic.function.SerializablePredicate;
+import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
+import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.util.tagtranslator.OSMTag;
 import org.heigit.bigspatialdata.oshdb.util.tagtranslator.OSMTagInterface;
 import org.heigit.bigspatialdata.oshdb.util.tagtranslator.OSMTagKey;

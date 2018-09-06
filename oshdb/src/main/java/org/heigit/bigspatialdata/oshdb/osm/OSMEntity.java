@@ -4,109 +4,38 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBTag;
+import org.heigit.bigspatialdata.oshdb.OSHDBTag;
+import org.heigit.bigspatialdata.oshdb.OSHDBTimestamp;
+import org.heigit.bigspatialdata.oshdb.OSHDBMember;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTagKey;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
+import org.heigit.bigspatialdata.oshdb.util.OSHDBTags;
+import com.google.common.collect.Iterables;
 
-public abstract class OSMEntity {
+public interface OSMEntity extends Comparable<OSMEntity> {
 
-  protected final long id;
+  long getId();
 
-  protected final int version;
-  protected final OSHDBTimestamp timestamp;
-  protected final long changeset;
-  protected final int userId;
-  protected final int[] tags;
+  OSMType getType();
 
-  /**
-   * Constructor for a OSMEntity. Holds the basic information, every OSM-Object has.
-   *
-   * @param id ID
-   * @param version Version. Versions &lt;=0 define visible Entities, &gt;0 deleted Entities.
-   * @param timestamp Timestamp in seconds since 01.01.1970 00:00:00 UTC.
-   * @param changeset Changeset-ID
-   * @param userId UserID
-   * @param tags An array of OSHDB key-value ids. The format is [KID1,VID1,KID2,VID2...KIDn,VIDn].
-   */
-  public OSMEntity(final long id, final int version, final OSHDBTimestamp timestamp, final long changeset,
-      final int userId, final int[] tags) {
-    this.id = id;
-    this.version = version;
-    this.timestamp = timestamp;
-    this.changeset = changeset;
-    this.userId = userId;
-    this.tags = tags;
+  int getVersion();
+
+  OSHDBTimestamp getTimestamp();
+
+  long getChangeset();
+
+  int getUserId();
+
+  boolean isVisible();
+
+  Iterable<OSHDBTag> getTags();
+
+  default boolean hasTagKey(OSHDBTagKey tag) {
+    return this.hasTagKey(tag.getIntKey());
   }
 
-  public long getId() {
-    return id;
+  default boolean hasTagKey(int key) {
+    return OSHDBTags.hasTagKey(getTags(), key);
   }
-
-  public abstract OSMType getType();
-
-  public int getVersion() {
-    return Math.abs(version);
-  }
-
-  public OSHDBTimestamp getTimestamp() {
-    return timestamp;
-  }
-
-  public long getChangeset() {
-    return changeset;
-  }
-
-  public int getUserId() {
-    return userId;
-  }
-
-  public boolean isVisible() {
-    return (version >= 0);
-  }
-
-  public Iterable<OSHDBTag> getTags() {
-    return new Iterable<OSHDBTag>() {
-      @Nonnull
-      @Override
-      public Iterator<OSHDBTag> iterator() {
-        return new Iterator<OSHDBTag>() {
-          int i=0;
-          @Override
-          public boolean hasNext() {
-            return i<tags.length;
-          }
-          @Override
-          public OSHDBTag next() {
-            return new OSHDBTag(tags[i++], tags[i++]);
-          }
-        };
-      }
-    };
-  }
-
-  public int[] getRawTags() {
-    return tags;
-  }
-
-  public boolean hasTagKey(OSHDBTagKey key) {
-    return this.hasTagKey(key.toInt());
-  }
-
-  public boolean hasTagKey(int key) {
-    for (int i = 0; i < tags.length; i += 2) {
-      if (tags[i] < key) {
-        continue;
-      }
-      if (tags[i] == key) {
-        return true;
-      }
-      if (tags[i] > key) {
-        return false;
-      }
-    }
-    return false;
-  }
-
 
   /**
    * Tests if any a given key is present but ignores certain values. Useful when looking for example
@@ -118,51 +47,47 @@ public abstract class OSMEntity {
    * @return true if the key is present and is NOT in a combination with the given values, false
    *         otherwise
    */
-  public boolean hasTagKeyExcluding(int key, int[] uninterestingValues) {
-    for (int i = 0; i < tags.length; i += 2) {
-      if (tags[i] < key) {
-        continue;
-      }
-      if (tags[i] == key) {
-        final int value = tags[i + 1];
-        return !IntStream.of(uninterestingValues).anyMatch(x -> x == value);
-      }
-      if (tags[i] > key) {
-        return false;
-      }
-    }
-    return false;
-  }
-
-  public boolean hasTagValue(int key, int value) {
-    for (int i = 0; i < tags.length; i += 2) {
-      if (tags[i] < key) {
-        continue;
-      }
-      if (tags[i] == key) {
-        return tags[i + 1] == value;
-      }
-      if (tags[i] > key) {
-        return false;
-      }
-    }
-    return false;
+  default boolean hasTagKeyExcluding(int key, int[] uninterestingValues) {
+    return OSHDBTags.hasTagKeyExcluding(getTags(), key, uninterestingValues);
   }
 
 
+  default boolean hasTagValue(int key, int value) {
+    return OSHDBTags.hasTagValue(getTags(), key, value);
+  }
 
-  public boolean equalsTo(OSMEntity o) {
-    return id == o.id && version == o.version && timestamp.equals(o.timestamp)
-        && changeset == o.changeset && userId == o.userId && Arrays.equals(tags, o.tags);
+  default int getTagValue(int key) {
+    return OSHDBTags.getTagValue(getTags(), key);
+  }
+
+  Iterable<? extends OSHDBMember> getMembers();
+
+
+
+  default boolean equalsTo(Object obj) {
+    if (!(obj instanceof OSMEntity))
+      return false;
+    OSMEntity other = (OSMEntity) obj;
+
+    boolean ret = (getId() == other.getId()) && (getVersion() == other.getVersion())
+        && (isVisible() == other.isVisible())
+        && (getTimestamp().getRawUnixTimestamp() == other.getTimestamp().getRawUnixTimestamp())
+        && (getChangeset() == other.getChangeset()) && (getUserId() == other.getUserId())
+        && (!isVisible() || Iterables.elementsEqual(getTags(), other.getTags())
+            && (!isVisible() || Iterables.elementsEqual(getMembers(), other.getMembers())));
+    return ret;
   }
 
   @Override
-  public String toString() {
-    return String.format("ID:%d V:+%d+ TS:%d CS:%d VIS:%s UID:%d TAGS:%S", getId(), getVersion(),
-        getTimestamp().getRawUnixTimestamp(), getChangeset(), isVisible(), getUserId(), Arrays.toString(
-            getRawTags()));
+  default int compareTo(OSMEntity o) {
+    int c = Long.compare(this.getId(), o.getId());
+    if (c == 0) {
+      c = Integer.compare(this.getVersion(), o.getVersion());
+      if (c == 0) {
+        c = this.getTimestamp().compareTo(o.getTimestamp());
+      }
+    }
+    return c;
   }
-
-
 
 }

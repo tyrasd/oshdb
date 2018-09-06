@@ -3,13 +3,12 @@ package org.heigit.bigspatialdata.oshdb.api.object;
 import com.vividsolutions.jts.geom.Geometry;
 import java.util.EnumSet;
 import java.util.Objects;
-
-import javax.annotation.Nonnull;
+import org.heigit.bigspatialdata.oshdb.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.osh.OSHEntity;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
 import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
 import org.heigit.bigspatialdata.oshdb.osm.OSMWay;
+import org.heigit.bigspatialdata.oshdb.util.OSHDBMembers;
 import org.heigit.bigspatialdata.oshdb.util.celliterator.CellIterator.IterateAllEntry;
 import org.heigit.bigspatialdata.oshdb.util.celliterator.ContributionType;
 import org.heigit.bigspatialdata.oshdb.util.celliterator.LazyEvaluatedObject;
@@ -198,24 +197,24 @@ public class OSMContribution implements OSHDBMapReducible {
     int userId = -1;
     // search children for actual contributor's userId
     if (entity instanceof OSMWay) {
-      userId = ((OSMWay)entity).getRefEntities(contributionTimestamp)
+      userId = OSHDBMembers.getMemberByTimestamp((OSMWay) entity, contributionTimestamp)
           .filter(Objects::nonNull)
           .filter(n -> n.getTimestamp().equals(contributionTimestamp))
           .findFirst()
           .map(OSMEntity::getUserId)
           .orElse(-1); // "rare" race condition, caused by not properly ordered timestamps (t_x > t_{x+1}) // todo: what to do here??
     } else if (entity instanceof OSMRelation) {
-      userId = ((OSMRelation) entity).getMemberEntities(contributionTimestamp)
+      userId = OSHDBMembers.getMemberByTimestamp(entity, contributionTimestamp)
           .filter(Objects::nonNull)
           .filter(e -> e.getTimestamp().equals(contributionTimestamp))
           .findFirst()
           .map(OSMEntity::getUserId)
           .orElseGet(() ->
-              ((OSMRelation) entity).getMemberEntities(contributionTimestamp)
+      OSHDBMembers.getMemberByTimestamp(entity, contributionTimestamp)
                   .filter(Objects::nonNull)
                   .filter(e -> e instanceof OSMWay) // todo: what to do with relation->node member changes or relation->relation[->*] changes?
                   .map(e -> (OSMWay)e)
-                  .flatMap(w -> w.getRefEntities(contributionTimestamp))
+          .flatMap(w -> OSHDBMembers.getMemberByTimestamp(w, contributionTimestamp))
                   .filter(Objects::nonNull)
                   .filter(n -> n.getTimestamp().equals(contributionTimestamp))
                   .findFirst()

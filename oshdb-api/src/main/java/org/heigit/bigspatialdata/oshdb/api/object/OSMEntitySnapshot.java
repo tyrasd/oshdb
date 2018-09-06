@@ -1,8 +1,8 @@
 package org.heigit.bigspatialdata.oshdb.api.object;
 
 import com.vividsolutions.jts.geom.Geometry;
+import org.heigit.bigspatialdata.oshdb.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.osh.OSHEntity;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
 import org.heigit.bigspatialdata.oshdb.util.celliterator.CellIterator.IterateByTimestampEntry;
 import org.heigit.bigspatialdata.oshdb.util.celliterator.LazyEvaluatedObject;

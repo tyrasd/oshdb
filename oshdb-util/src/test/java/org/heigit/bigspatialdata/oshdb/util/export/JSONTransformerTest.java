@@ -7,15 +7,15 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.heigit.bigspatialdata.oshdb.OSHDBTimestamp;
+import org.heigit.bigspatialdata.oshdb.OSHDBMember;
 import org.heigit.bigspatialdata.oshdb.grid.GridOSHNodes;
 import org.heigit.bigspatialdata.oshdb.osh.OSHNode;
 import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
-import org.heigit.bigspatialdata.oshdb.osm.OSMMember;
 import org.heigit.bigspatialdata.oshdb.osm.OSMNode;
 import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.osm.OSMWay;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.util.exceptions.OSHDBKeytablesNotFoundException;
 import org.heigit.bigspatialdata.oshdb.util.tagInterpreter.TagInterpreter;
 import org.heigit.bigspatialdata.oshdb.util.tagtranslator.TagTranslator;
@@ -60,9 +60,9 @@ public class JSONTransformerTest {
     List<OSMNode> versions = new ArrayList<>(1);
     versions.add(new OSMNode(123l, 1, new OSHDBTimestamp(0l), 1l, USER_A, TAGS_A, LONLAT_A[0], LONLAT_A[1]));
     OSHNode hnode = OSHNode.build(versions);
-    OSMMember part = new OSMMember(1L, OSMType.NODE, 0, hnode);
+    OSHDBMember part = new OSHDBMember(1L, OSMType.NODE, 0, hnode);
     OSMRelation instance =
-        new OSMRelation(1L, 1, new OSHDBTimestamp(0L), 1L, 1, new int[] {1, 2}, new OSMMember[] {part, part});
+        new OSMRelation(1L, 1, new OSHDBTimestamp(0L), 1L, 1, new int[] {1, 2}, new OSHDBMember[] {part, part});
     TagTranslator tt = new TagTranslator(
         DriverManager.getConnection("jdbc:h2:./src/test/resources/test-data", "sa", ""));
     String expResult =
@@ -83,8 +83,8 @@ public class JSONTransformerTest {
     List<OSMNode> versions = new ArrayList<>(1);
     versions.add(new OSMNode(123l, 1, new OSHDBTimestamp(0l), 0l, USER_A, TAGS_A, LONLAT_A[0], LONLAT_A[1]));
     OSHNode hnode = OSHNode.build(versions);
-    OSMMember part = new OSMMember(1L, OSMType.NODE, 1, hnode);
-    OSMWay instance = new OSMWay(1L, 1, new OSHDBTimestamp(0L), 1L, 1, new int[] {1, 2}, new OSMMember[] {part, part});
+    OSHDBMember part = new OSHDBMember(1L, OSMType.NODE, 1, hnode);
+    OSMWay instance = new OSMWay(1L, 1, new OSHDBTimestamp(0L), 1L, 1, new int[] {1, 2}, new OSHDBMember[] {part, part});
     TagTranslator tt = new TagTranslator(
         DriverManager.getConnection("jdbc:h2:./src/test/resources/test-data", "sa", ""));
     String expResult =
@@ -171,9 +171,9 @@ class FakeTagInterpreter implements TagInterpreter {
   @Override
   public boolean hasInterestingTagKey(OSMEntity osm) { return false; }
   @Override
-  public boolean isMultipolygonOuterMember(OSMMember osmMember) { return false; }
+  public boolean isMultipolygonOuterMember(OSHDBMember osmMember) { return false; }
   @Override
-  public boolean isMultipolygonInnerMember(OSMMember osmMember) { return false; }
+  public boolean isMultipolygonInnerMember(OSHDBMember osmMember) { return false; }
   @Override
   public boolean isOldStyleMultipolygon(OSMRelation osmRelation) { return false; }
 }

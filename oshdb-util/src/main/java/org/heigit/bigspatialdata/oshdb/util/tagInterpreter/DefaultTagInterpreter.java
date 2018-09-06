@@ -1,5 +1,6 @@
 package org.heigit.bigspatialdata.oshdb.util.tagInterpreter;
 
+import org.heigit.bigspatialdata.oshdb.OSHDBTag;
 import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
 import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
 import org.heigit.bigspatialdata.oshdb.util.exceptions.OSHDBKeytablesNotFoundException;
@@ -86,30 +87,30 @@ public class DefaultTagInterpreter extends BaseTagInterpreter {
       switch ((String)tag.get("polygon")) {
         case "all":
           Set<Integer> valueIds = new InvertedHashSet<>();
-          int keyId = tagTranslator.getOSHDBTagKeyOf(key).toInt();
-          valueIds.add(tagTranslator.getOSHDBTagOf(key, "no").getValue());
+          int keyId = tagTranslator.getOSHDBTagKeyOf(key).getIntKey();
+          valueIds.add(tagTranslator.getOSHDBTagOf(key, "no").getIntValue());
           wayAreaTags.put(keyId, valueIds);
           break;
         case "whitelist":
           valueIds = new HashSet<>();
-          keyId = tagTranslator.getOSHDBTagKeyOf(key).toInt();
+          keyId = tagTranslator.getOSHDBTagKeyOf(key).getIntKey();
           JSONArray values = (JSONArray) tag.get("values");
           //noinspection unchecked
           for (String value : (Iterable<String>) values) {
             OSMTag keyValue = new OSMTag(key, value);
-            valueIds.add(tagTranslator.getOSHDBTagOf(keyValue).getValue());
+            valueIds.add(tagTranslator.getOSHDBTagOf(keyValue).getIntValue());
           }
-          valueIds.add(tagTranslator.getOSHDBTagOf(key, "no").getValue());
+          valueIds.add(tagTranslator.getOSHDBTagOf(key, "no").getIntValue());
           wayAreaTags.put(keyId, valueIds);
           break;
         case "blacklist":
           valueIds = new InvertedHashSet<>();
-          keyId = tagTranslator.getOSHDBTagKeyOf(key).toInt();
+          keyId = tagTranslator.getOSHDBTagKeyOf(key).getIntKey();
           values = (JSONArray) tag.get("values");
           //noinspection unchecked
           for (String value : (Iterable<String>) values) {
             OSMTag keyValue = new OSMTag(key, value);
-            valueIds.add(tagTranslator.getOSHDBTagOf(keyValue).getValue());
+            valueIds.add(tagTranslator.getOSHDBTagOf(keyValue).getIntValue());
           }
           wayAreaTags.put(keyId, valueIds);
           break;
@@ -119,10 +120,10 @@ public class DefaultTagInterpreter extends BaseTagInterpreter {
     }
 
     // hardcoded type=multipolygon for relations
-    this.typeKey = tagTranslator.getOSHDBTagKeyOf("type").toInt();
-    this.typeMultipolygonValue = tagTranslator.getOSHDBTagOf("type", "multipolygon").getValue();
-    this.typeBoundaryValue = tagTranslator.getOSHDBTagOf("type", "boundary").getValue();
-    this.typeRouteValue = tagTranslator.getOSHDBTagOf("type", "route").getValue();
+    this.typeKey = tagTranslator.getOSHDBTagKeyOf("type").getIntKey();
+    this.typeMultipolygonValue = tagTranslator.getOSHDBTagOf("type", "multipolygon").getIntValue();
+    this.typeBoundaryValue = tagTranslator.getOSHDBTagOf("type", "boundary").getIntValue();
+    this.typeRouteValue = tagTranslator.getOSHDBTagOf("type", "route").getIntValue();
 
     // we still need to also store relation area tags for isOldStyleMultipolygon() functionality!
     Map<Integer, Set<Integer>> relAreaTags = new TreeMap<>();
@@ -137,19 +138,19 @@ public class DefaultTagInterpreter extends BaseTagInterpreter {
     // todo: check json schema for validity
     //noinspection unchecked
     for (String tagKey : (Iterable<String>)uninterestingTagsList) {
-      uninterestingTagKeys.add(tagTranslator.getOSHDBTagKeyOf(tagKey).toInt());
+      uninterestingTagKeys.add(tagTranslator.getOSHDBTagKeyOf(tagKey).getIntKey());
     }
 
     this.wayAreaTags = wayAreaTags;
     this.relationAreaTags = relAreaTags;
     this.uninterestingTagKeys = uninterestingTagKeys;
 
-    this.areaNoTagKeyId = tagTranslator.getOSHDBTagOf("area", "no").getKey();
-    this.areaNoTagValueId = tagTranslator.getOSHDBTagOf("area", "no").getValue();
+    this.areaNoTagKeyId = tagTranslator.getOSHDBTagOf("area", "no").getIntKey();
+    this.areaNoTagValueId = tagTranslator.getOSHDBTagOf("area", "no").getIntValue();
 
-    this.outerRoleId = tagTranslator.getOSHDBRoleOf("outer").toInt();
-    this.innerRoleId = tagTranslator.getOSHDBRoleOf("inner").toInt();
-    this.emptyRoleId = tagTranslator.getOSHDBRoleOf("").toInt();
+    this.outerRoleId = tagTranslator.getOSHDBRoleOf("outer").getIntRole();
+    this.innerRoleId = tagTranslator.getOSHDBRoleOf("inner").getIntRole();
+    this.emptyRoleId = tagTranslator.getOSHDBRoleOf("").getIntRole();
   }
 
   @Override
@@ -172,13 +173,12 @@ public class DefaultTagInterpreter extends BaseTagInterpreter {
 
   // checks if the relation has the tag "type=multipolygon"
   private boolean evaluateRelationForArea(OSMRelation entity) {
-    int[] tags = entity.getRawTags();
+    for(OSHDBTag tag : entity.getTags()){
     // skip area=no check, since that doesn't make much sense for multipolygon relations (does it??)
     // the following is slightly faster than running `return entity.hasTagValue(k1,v1) || entity.hasTagValue(k2,v2);`
-    for (int i = 0; i < tags.length; i += 2) {
-      if (tags[i] == typeKey)
-        return tags[i + 1] == typeMultipolygonValue || tags[i + 1] == typeBoundaryValue;
-      else if (tags[i] > typeKey)
+      if (tag.getIntKey() == typeKey)
+        return tag.getIntValue() == typeMultipolygonValue || tag.getIntValue() == typeBoundaryValue;
+      else if (tag.getIntKey() > typeKey)
         return false;
     }
     return false;

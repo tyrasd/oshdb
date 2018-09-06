@@ -3,7 +3,7 @@ package org.heigit.bigspatialdata.oshdb.util.time;
 import java.io.Serializable;
 import java.util.SortedSet;
 import javax.annotation.Nonnull;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
+import org.heigit.bigspatialdata.oshdb.OSHDBTimestamp;
 
 public class OSHDBTimestampInterval implements Serializable, Comparable<OSHDBTimestampInterval> {
   private final OSHDBTimestamp fromTimestamp;

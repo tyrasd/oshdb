@@ -3,10 +3,14 @@ package org.heigit.bigspatialdata.oshdb.util.time;
 import java.time.Duration;
 import java.time.Period;
 import java.time.ZonedDateTime;
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
+import org.heigit.bigspatialdata.oshdb.OSHDBTimestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,6 +131,7 @@ public class OSHDBTimestamps implements OSHDBTimestampList {
    *
    * @return a list of unix timestamps (measured in seconds)
    */
+  @Override
   public SortedSet<OSHDBTimestamp> get() {
     if (period != null) {
       return new TreeSet<>(

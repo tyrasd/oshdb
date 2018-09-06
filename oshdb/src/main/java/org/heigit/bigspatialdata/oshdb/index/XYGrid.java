@@ -3,12 +3,11 @@ package org.heigit.bigspatialdata.oshdb.index;
 import java.io.Serializable;
 import java.util.Set;
 import java.util.TreeSet;
-
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.heigit.bigspatialdata.oshdb.OSHDB;
+import org.heigit.bigspatialdata.oshdb.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.CellId;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

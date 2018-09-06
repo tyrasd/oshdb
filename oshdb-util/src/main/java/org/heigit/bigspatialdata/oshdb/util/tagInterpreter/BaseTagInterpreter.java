@@ -1,15 +1,20 @@
 package org.heigit.bigspatialdata.oshdb.util.tagInterpreter;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
+import org.heigit.bigspatialdata.oshdb.OSHDBMember;
+import org.heigit.bigspatialdata.oshdb.OSHDBTag;
 import org.heigit.bigspatialdata.oshdb.osh.OSHWay;
 import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
-import org.heigit.bigspatialdata.oshdb.osm.OSMMember;
 import org.heigit.bigspatialdata.oshdb.osm.OSMNode;
 import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.osm.OSMWay;
+import org.heigit.bigspatialdata.oshdb.util.OSHDBTags;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 /**
  * instances of this class are used to determine whether a OSM way represents a polygon or linestring geometry.
@@ -42,23 +47,20 @@ class BaseTagInterpreter implements TagInterpreter {
   }
 
   private boolean evaluateWayForArea(OSMWay entity) {
-    int[] tags = entity.getRawTags();
-    if (entity.hasTagValue(areaNoTagKeyId, areaNoTagValueId))
+    List<OSHDBTag> tags = Lists.newArrayList(entity.getTags());
+    if(OSHDBTags.hasTagValue(tags, areaNoTagKeyId, areaNoTagValueId))
       return false;
-    for (int i = 0; i < tags.length; i += 2) {
-      if (wayAreaTags.containsKey(tags[i]) &&
-          wayAreaTags.get(tags[i]).contains(tags[i + 1]))
+    for(OSHDBTag tag : tags){
+      if (wayAreaTags.getOrDefault(tag.getIntKey(), Collections.emptySet()).contains(tag.getIntValue()))
         return true;
     }
     return false;
   }
 
   private boolean evaluateRelationForArea(OSMRelation entity) {
-    int[] tags = entity.getRawTags();
+    for(OSHDBTag tag : entity.getTags()){
     // skip area=no check, since that doesn't make much sense for multipolygon relations (does it??)
-    for (int i = 0; i < tags.length; i += 2) {
-      if (relationAreaTags.containsKey(tags[i]) &&
-          relationAreaTags.get(tags[i]).contains(tags[i + 1]))
+      if(relationAreaTags.getOrDefault(tag.getIntKey(), Collections.emptySet()).contains(tag.getIntValue()))
         return true;
     }
     return false;
@@ -70,7 +72,7 @@ class BaseTagInterpreter implements TagInterpreter {
       return false;
     } else if (entity instanceof OSMWay) {
       OSMWay way = (OSMWay) entity;
-      OSMMember[] nds = way.getRefs();
+      OSHDBMember[] nds = Iterables.toArray(way.getMembers(), OSHDBMember.class);
       // must form closed ring with at least 3 vertices
       if (nds.length < 4 || nds[0].getId() != nds[nds.length - 1].getId()) {
         return false;
@@ -91,9 +93,8 @@ class BaseTagInterpreter implements TagInterpreter {
 
   @Override
   public boolean hasInterestingTagKey(OSMEntity osm) {
-    int[] tags = osm.getRawTags();
-    for (int i=0; i<tags.length; i+=2) {
-      if (!uninterestingTagKeys.contains(tags[i]))
+    for(OSHDBTag tag : osm.getTags()){
+      if (!uninterestingTagKeys.contains(tag.getIntKey()))
         return true;
     }
     return false;
@@ -102,35 +103,34 @@ class BaseTagInterpreter implements TagInterpreter {
   @Override
   public boolean isOldStyleMultipolygon(OSMRelation osmRelation) {
     int outerWayCount = 0;
-    OSMMember[] members = osmRelation.getMembers();
-    for (int i=0; i<members.length; i++) {
-      if (members[i].getType() == OSMType.WAY && members[i].getRawRoleId() == outerRoleId)
+
+    for(OSHDBMember member: osmRelation.getMembers()){
+      if (member.getType() == OSMType.WAY && member.getRole().getIntRole() == outerRoleId)
         if (++outerWayCount > 1) return false; // exit early if two outer ways were already found
     }
     if (outerWayCount != 1) return false;
-    int[] tags = osmRelation.getRawTags();
-    for (int i=0; i<tags.length; i+=2) {
-      if (relationAreaTags.containsKey(tags[i]) && relationAreaTags.get(tags[i]).contains(tags[i+1]))
+    for(OSHDBTag tag : osmRelation.getTags()){
+      if (relationAreaTags.getOrDefault(tag.getIntKey(), Collections.emptySet()).contains(tag.getIntValue()))
         continue;
-      if (!uninterestingTagKeys.contains(tags[i]))
+      if (!uninterestingTagKeys.contains(tag.getIntKey()))
         return false;
     }
     return true;
   }
 
   @Override
-  public boolean isMultipolygonOuterMember(OSMMember osmMember) {
+  public boolean isMultipolygonOuterMember(OSHDBMember osmMember) {
     if (!(osmMember.getEntity() instanceof OSHWay)) return false;
-    int roleId = osmMember.getRawRoleId();
+    int roleId = osmMember.getRole().getIntRole();
     return roleId == this.outerRoleId ||
            roleId == this.emptyRoleId; // some historic osm data may still be mapped without roles set -> assume empty roles to mean outer
     // todo: check if there is need for some more clever outer/inner detection for the empty role case with old data
   }
 
   @Override
-  public boolean isMultipolygonInnerMember(OSMMember osmMember) {
+  public boolean isMultipolygonInnerMember(OSHDBMember osmMember) {
     if (!(osmMember.getEntity() instanceof OSHWay)) return false;
-    return osmMember.getRawRoleId() == this.innerRoleId;
+    return osmMember.getRole().getIntRole() == this.innerRoleId;
   }
 
 }

@@ -1,9 +1,7 @@
-package org.heigit.bigspatialdata.oshdb.util;
+package org.heigit.bigspatialdata.oshdb;
 
 import java.io.Serializable;
 import java.util.Locale;
-
-import org.heigit.bigspatialdata.oshdb.OSHDB;
 
 
 public class OSHDBBoundingBox implements Serializable {

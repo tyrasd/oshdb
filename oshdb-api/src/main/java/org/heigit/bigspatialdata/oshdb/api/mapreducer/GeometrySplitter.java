@@ -13,9 +13,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.heigit.bigspatialdata.oshdb.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMContribution;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMEntitySnapshot;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.geometry.OSHDBGeometryBuilder;
 import org.heigit.bigspatialdata.oshdb.util.geometry.fip.FastBboxInPolygon;
 import org.heigit.bigspatialdata.oshdb.util.geometry.fip.FastBboxOutsidePolygon;
@@ -53,7 +53,7 @@ class GeometrySplitter<U extends Comparable<U>> {
   public List<Pair<U, OSMEntitySnapshot>> splitOSMEntitySnapshot(OSMEntitySnapshot data) {
     OSHDBBoundingBox oshBoundingBox = data.getOSHEntity().getBoundingBox();
     //noinspection unchecked – STRtree works with raw types unfortunately :-/
-    List<U> candidates = (List<U>) spatialIndex.query(
+    List<U> candidates = spatialIndex.query(
         OSHDBGeometryBuilder.getGeometry(oshBoundingBox).getEnvelopeInternal()
     );
     return candidates.stream()
@@ -94,7 +94,7 @@ class GeometrySplitter<U extends Comparable<U>> {
   public List<Pair<U, OSMContribution>> splitOSMContribution(OSMContribution data) {
     OSHDBBoundingBox oshBoundingBox = data.getOSHEntity().getBoundingBox();
     //noinspection unchecked – STRtree works with raw types unfortunately :-/
-    List<U> candidates = (List<U>) spatialIndex.query(
+    List<U> candidates = spatialIndex.query(
         OSHDBGeometryBuilder.getGeometry(oshBoundingBox).getEnvelopeInternal()
     );
     return candidates.stream()

@@ -2,10 +2,9 @@ package org.heigit.bigspatialdata.oshdb.index.zfc;
 
 import java.util.Comparator;
 import java.util.Iterator;
-
 import org.heigit.bigspatialdata.oshdb.OSHDB;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox.OVERLAP;
+import org.heigit.bigspatialdata.oshdb.OSHDBBoundingBox;
+import org.heigit.bigspatialdata.oshdb.OSHDBBoundingBox.OVERLAP;
 
 public class ZGrid {
 

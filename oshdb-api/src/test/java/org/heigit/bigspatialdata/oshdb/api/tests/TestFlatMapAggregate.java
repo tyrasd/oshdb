@@ -7,11 +7,11 @@ package org.heigit.bigspatialdata.oshdb.api.tests;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.heigit.bigspatialdata.oshdb.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.api.db.OSHDBDatabase;
 import org.heigit.bigspatialdata.oshdb.api.db.OSHDBH2;
 import org.heigit.bigspatialdata.oshdb.api.mapreducer.MapReducer;
 import org.heigit.bigspatialdata.oshdb.api.mapreducer.OSMContributionView;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.time.OSHDBTimestamps;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMContribution;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
@@ -49,12 +49,11 @@ public class TestFlatMapAggregate {
               if (contribution.getEntityAfter().getId() != 617308093)
                 return new ArrayList<>();
               List<Pair<Long, Pair<Integer, Integer>>> ret = new ArrayList<>();
-              int[] tags = contribution.getEntityAfter().getRawTags();
-              for (int i=0; i<tags.length; i+=2)
+              contribution.getEntityAfter().getTags().forEach(tag -> {
                 ret.add(new ImmutablePair<>(
                     contribution.getEntityAfter().getId(),
-                    new ImmutablePair<>(tags[i], tags[i+1])
-                ));
+                    new ImmutablePair<>(tag.getIntKey(), tag.getIntValue())));
+              });
               return ret;
             }
         )

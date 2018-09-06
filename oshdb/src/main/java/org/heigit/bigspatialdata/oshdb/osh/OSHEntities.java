@@ -1,36 +1,60 @@
 package org.heigit.bigspatialdata.oshdb.osh;
 
-import java.io.IOException;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Streams;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.Map.Entry;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import org.heigit.bigspatialdata.oshdb.OSHDB;
+import org.heigit.bigspatialdata.oshdb.OSHDBMember;
+import org.heigit.bigspatialdata.oshdb.OSHDBTimestamp;
+import org.heigit.bigspatialdata.oshdb.impl.OSHDBWayMember;
 import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
-import org.heigit.bigspatialdata.oshdb.osm.OSMMember;
+import org.heigit.bigspatialdata.oshdb.osm.OSMNode;
 import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
 import org.heigit.bigspatialdata.oshdb.osm.OSMWay;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
-import com.google.common.collect.Lists;
+
 
 public abstract class OSHEntities {
 
-  public static <OSM extends OSMEntity> SortedMap<OSHDBTimestamp, OSM> getByTimestamps(
-      Iterable<OSM> versions, List<OSHDBTimestamp> byTimestamps) {
-    SortedMap<OSHDBTimestamp, OSM> result = new TreeMap<>();
+  public static OSMEntity getLatest(OSHEntity osh) {
+    switch (OSHDB.sortOrder) {
+      case DESC:
+        return Iterables.getFirst(osh.getVersions(), null);
+      default:
+        return Iterables.getLast(osh.getVersions());
+    }
+  }
+
+  public static Stream<OSMNode> getEntities(OSHWay osh, OSHDBTimestamp timestamp) {
+    return Streams.stream(osh.getMembers()).map(OSHDBWayMember::getEntity).filter(Objects::nonNull)
+        .map(e -> OSHEntities.getByTimestamp((OSHNode) e.getVersions(), timestamp));
+  }
+
+  public static Stream<OSMEntity> getEntities(OSHEntity osh, OSHDBTimestamp timestamp) {
+    return Streams.stream(osh.getMembers()).map(OSHDBMember::getEntity).filter(Objects::nonNull)
+        .map(e -> OSHEntities.getByTimestamp(e.getVersions(), timestamp));
+  }
+
+  public static <T extends OSMEntity> SortedMap<OSHDBTimestamp, T> getByTimestamps(
+      Iterable<T> versions, List<OSHDBTimestamp> byTimestamps) {
+    SortedMap<OSHDBTimestamp, T> result = new TreeMap<>();
 
     int i = byTimestamps.size() - 1;
-    Iterator<OSM> itr = versions.iterator();
+    Iterator<T> itr = versions.iterator();
     while (itr.hasNext() && i >= 0) {
-      OSM osm = itr.next();
+      T osm = itr.next();
       if (osm.getTimestamp().getRawUnixTimestamp() > byTimestamps.get(i).getRawUnixTimestamp()) {
         continue;
       } else {
@@ -44,10 +68,10 @@ public abstract class OSHEntities {
     return result;
   }
 
-  public static <OSM extends OSMEntity> Map<OSHDBTimestamp, OSM> getByTimestamps(
-      Iterable<OSM> versions) { // todo: name of method?
-    Map<OSHDBTimestamp, OSM> result = new TreeMap<>();
-    for (OSM osm : versions) {
+  // TODO: name of method?
+  public static <T extends OSMEntity> Map<OSHDBTimestamp, T> getByTimestamps(Iterable<T> versions) {
+    Map<OSHDBTimestamp, T> result = new TreeMap<>();
+    for (T osm : versions) {
       result.put(osm.getTimestamp(), osm);
     }
     return result;
@@ -55,9 +79,25 @@ public abstract class OSHEntities {
     // return this.getBetweenTimestamps(Long.MIN_VALUE, Long.MAX_VALUE);
   }
 
-  public static <OSM extends OSMEntity> OSM getByTimestamp(Iterable<OSM> versions,
+  public static OSMEntity getByTimestamp(OSHEntity osh, OSHDBTimestamp timestamp) {
+    return getByTimestamp(osh.getVersions(), timestamp);
+  }
+
+  public static OSMNode getByTimestamp(OSHNode osh, OSHDBTimestamp timestamp) {
+    return getByTimestamp(osh.getVersions(), timestamp);
+  }
+
+  public static OSMWay getByTimestamp(OSHWay osh, OSHDBTimestamp timestamp) {
+    return getByTimestamp(osh.getVersions(), timestamp);
+  }
+
+  public static OSMRelation getByTimestamp(OSHRelation osh, OSHDBTimestamp timestamp) {
+    return getByTimestamp(osh.getVersions(), timestamp);
+  }
+
+  public static <T extends OSMEntity> T getByTimestamp(Iterable<T> versions,
       OSHDBTimestamp timestamp) {
-    for (OSM osm : versions) {
+    for (T osm : versions) {
       if (osm.getTimestamp().getRawUnixTimestamp() <= timestamp.getRawUnixTimestamp()) {
         return osm;
       }
@@ -65,14 +105,14 @@ public abstract class OSHEntities {
     return null;
   }
 
-  public static <OSM extends OSMEntity> List<OSM> getBetweenTimestamps(Iterable<OSM> versions,
+  public static <T extends OSMEntity> List<T> getBetweenTimestamps(Iterable<T> versions,
       final OSHDBTimestamp t1, final OSHDBTimestamp t2) {
     final long maxTimestamp = Math.max(t1.getRawUnixTimestamp(), t2.getRawUnixTimestamp());
     final long minTimestamp = Math.min(t1.getRawUnixTimestamp(), t2.getRawUnixTimestamp());
 
-    List<OSM> result = new ArrayList<>();
+    List<T> result = new ArrayList<>();
 
-    for (OSM osm : versions) {
+    for (T osm : versions) {
       if (osm.getTimestamp().getRawUnixTimestamp() > maxTimestamp) {
         continue;
       }
@@ -92,8 +132,7 @@ public abstract class OSHEntities {
    * @param osh the osh entity to work on
    * @return a map between timestamps and changeset ids
    */
-  public static Map<OSHDBTimestamp, Long> getChangesetTimestamps(
-      OSHEntity<? extends OSMEntity> osh) {
+  public static Map<OSHDBTimestamp, Long> getChangesetTimestamps(OSHEntity osh) {
     if (osh instanceof OSHWay) {
       return getChangesetTimestamps((OSHWay) osh);
     } else if (osh instanceof OSHRelation) {
@@ -111,20 +150,16 @@ public abstract class OSHEntities {
   static Map<OSHDBTimestamp, Long> getChangesetTimestamps(OSHWay osh) {
     Map<OSHDBTimestamp, Long> result = new TreeMap<>();
 
-    List<OSMWay> ways = osh.getVersions();
-    ways.forEach(osm -> {
+    osh.getVersions().forEach(osm -> {
       result.put(osm.getTimestamp(), osm.getChangeset());
     });
 
     // recurse way nodes
-    try {
-      osh.getNodes().forEach(oshNode -> {
-        if (oshNode != null)
-          oshNode.getVersions().forEach(
-              osmNode -> result.putIfAbsent(osmNode.getTimestamp(), osmNode.getChangeset()));
-      });
-    } catch (IOException e) {
-    }
+    osh.getMembers().forEach(member -> {
+      if (member.getEntity() != null)
+        member.getEntity().getVersions()
+            .forEach(osm -> result.putIfAbsent(osm.getTimestamp(), osm.getChangeset()));
+    });
 
     return result;
   }
@@ -132,19 +167,16 @@ public abstract class OSHEntities {
   static Map<OSHDBTimestamp, Long> getChangesetTimestamps(OSHRelation osh) {
     Map<OSHDBTimestamp, Long> result = new TreeMap<>();
 
-    List<OSMRelation> rels = osh.getVersions();
-    rels.forEach(osmRel -> {
+    osh.getVersions().forEach(osmRel -> {
       result.put(osmRel.getTimestamp(), osmRel.getChangeset());
     });
 
     // recurse rel members
-    try {
-      Stream.concat(osh.getNodes().stream(), osh.getWays().stream()).forEach(oshEntity -> {
-        if (oshEntity != null)
-          oshEntity.getChangesetTimestamps().forEach(result::putIfAbsent);
-      });
-    } catch (IOException e) {
-    }
+    osh.getMembers().forEach(member -> {
+      if (member.getEntity() != null) {
+        getChangesetTimestamps(member.getEntity()).forEach(result::putIfAbsent);
+      }
+    });
 
     return result;
   }
@@ -156,12 +188,14 @@ public abstract class OSHEntities {
    * @param osh the osh entity to work on
    * @return a list of timestamps where this entity has been modified
    */
-  public static List<OSHDBTimestamp> getModificationTimestamps(OSHEntity<? extends OSMEntity> osh) {
-    if (osh instanceof OSHWay)
+  public static List<OSHDBTimestamp> getModificationTimestamps(OSHEntity osh) {
+    if (osh instanceof OSHWay) {
       return getModificationTimestamps((OSHWay) osh, true);
-    if (osh instanceof OSHRelation)
+    }
+    if (osh instanceof OSHRelation) {
       return getModificationTimestamps((OSHRelation) osh, true);
-    return getModificationTimestamps((OSHNode) osh, true);
+    }
+    return getModificationTimestamps(osh, true);
   }
 
   /**
@@ -175,17 +209,15 @@ public abstract class OSHEntities {
    *        not
    * @return a list of timestamps where this entity has been modified
    */
-  static List<OSHDBTimestamp> getModificationTimestamps(OSHEntity<? extends OSMEntity> osh,
-      boolean recurse) {
+  public static List<OSHDBTimestamp> getModificationTimestamps(OSHEntity osh, boolean recurse) {
     if (osh instanceof OSHWay)
       return getModificationTimestamps((OSHWay) osh, recurse);
     if (osh instanceof OSHRelation)
       return getModificationTimestamps((OSHRelation) osh, recurse);
-    return getModificationTimestamps((OSHNode) osh, recurse);
+    return getModificationTimestamps((OSHNode) osh);
   }
 
-  static List<OSHDBTimestamp> getModificationTimestamps(OSHNode osh,
-      @SuppressWarnings({"unused", "SameParameterValue"}) boolean recurse) {
+  public static List<OSHDBTimestamp> getModificationTimestamps(OSHNode osh) {
     List<OSHDBTimestamp> result = new ArrayList<>();
     for (OSMEntity osm : osh.getVersions()) {
       result.add(osm.getTimestamp());
@@ -193,11 +225,11 @@ public abstract class OSHEntities {
     return Lists.reverse(result);
   }
 
-  static List<OSHDBTimestamp> getModificationTimestamps(OSHWay osh, boolean recurse) {
+  public static List<OSHDBTimestamp> getModificationTimestamps(OSHWay osh, boolean recurse) {
     return _getModificationTimestamps(osh, recurse, null);
   }
 
-  static List<OSHDBTimestamp> getModificationTimestamps(OSHRelation osh, boolean recurse) {
+  public static List<OSHDBTimestamp> getModificationTimestamps(OSHRelation osh, boolean recurse) {
     return _getModificationTimestamps(osh, recurse, null);
   }
 
@@ -217,7 +249,7 @@ public abstract class OSHEntities {
    *        from oshEntity by calling {@link #getChangesetTimestamps}.
    * @return a list of timestamps where this entity has been modified
    */
-  public static List<OSHDBTimestamp> getModificationTimestamps(OSHEntity<? extends OSMEntity> osh,
+  public static List<OSHDBTimestamp> getModificationTimestamps(OSHEntity osh,
       Predicate<OSMEntity> osmEntityFilter, Map<OSHDBTimestamp, Long> changesetTimestamps) {
     List<OSHDBTimestamp> allModificationTimestamps;
     if (osh instanceof OSHWay) {
@@ -254,7 +286,7 @@ public abstract class OSHEntities {
    * @param osmEntityFilter only timestamps for which the entity matches this filter are returned
    * @return a list of timestamps where this entity has been modified
    */
-  public static List<OSHDBTimestamp> getModificationTimestamps(OSHEntity<? extends OSMEntity> osh,
+  public static List<OSHDBTimestamp> getModificationTimestamps(OSHEntity osh,
       Predicate<OSMEntity> osmEntityFilter) {
     if (osh instanceof OSHWay) {
       return getModificationTimestamps((OSHWay) osh, osmEntityFilter);
@@ -321,8 +353,8 @@ public abstract class OSHEntities {
         nextT = thisT;
         continue;
       }
-      OSMMember[] nds = osm.getRefs();
-      for (OSMMember nd : nds) {
+
+      for (OSHDBMember nd : osm.getMembers()) {
         OSHNode oshNode = (OSHNode) nd.getEntity();
         if (oshNode == null)
           continue;
@@ -396,12 +428,12 @@ public abstract class OSHEntities {
     OSHDBTimestamp nextT = new OSHDBTimestamp(Long.MAX_VALUE);
     for (OSMRelation osmRelation : versions) {
       OSHDBTimestamp thisT = osmRelation.getTimestamp();
-      if (!osmRelation.isVisible() ||
-          (osmEntityFilter != null && !osmEntityFilter.test(osmRelation))) {
+      if (!osmRelation.isVisible()
+          || (osmEntityFilter != null && !osmEntityFilter.test(osmRelation))) {
         nextT = thisT;
         continue;
       }
-      for (OSMMember member : osmRelation.getMembers()) {
+      for (OSHDBMember member : osmRelation.getMembers()) {
         switch (member.getType()) {
           case NODE:
           case WAY:

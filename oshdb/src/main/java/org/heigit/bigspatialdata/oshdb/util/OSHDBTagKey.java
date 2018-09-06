@@ -4,32 +4,32 @@ import java.io.Serializable;
 
 public class OSHDBTagKey implements Serializable {
   private static final long serialVersionUID = 1L;
-  private int key;
+  private int intKey;
 
   public OSHDBTagKey(int key) {
-    this.key = key;
+    this.intKey = key;
   }
 
-  public int toInt() {
-    return this.key;
+  public int getIntKey() {
+    return this.intKey;
   }
 
   public boolean isPresentInKeytables() {
-    return this.key >= 0;
+    return this.intKey >= 0;
   }
 
   @Override
   public boolean equals(Object o) {
-    return o instanceof OSHDBTagKey && ((OSHDBTagKey)o).key == this.key;
+    return o instanceof OSHDBTagKey && ((OSHDBTagKey)o).intKey == this.intKey;
   }
 
   @Override
   public int hashCode() {
-    return this.key;
+    return this.intKey;
   }
 
   @Override
   public String toString() {
-    return Integer.toString(this.key);
+    return Integer.toString(this.intKey);
   }
 }

@@ -18,6 +18,9 @@ import java.util.*;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.tuple.Pair;
 import org.heigit.bigspatialdata.oshdb.OSHDB;
+import org.heigit.bigspatialdata.oshdb.OSHDBBoundingBox;
+import org.heigit.bigspatialdata.oshdb.OSHDBTag;
+import org.heigit.bigspatialdata.oshdb.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.api.db.OSHDBDatabase;
 import org.heigit.bigspatialdata.oshdb.api.db.OSHDBJdbc;
 import org.heigit.bigspatialdata.oshdb.api.generic.*;
@@ -25,7 +28,6 @@ import org.heigit.bigspatialdata.oshdb.api.generic.function.*;
 import org.heigit.bigspatialdata.oshdb.api.object.OSHDBMapReducible;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMContribution;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMEntitySnapshot;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.util.time.OSHDBTimestamps;
 import org.heigit.bigspatialdata.oshdb.util.geometry.Geo;
 import org.heigit.bigspatialdata.oshdb.util.tagInterpreter.DefaultTagInterpreter;
@@ -445,8 +447,8 @@ public abstract class MapReducer<X> implements
       ret._filters.add(ignored -> false);
       return ret;
     }
-    int keyId = keyValueId.getKey();
-    int valueId = keyValueId.getValue();
+    int keyId = keyValueId.getIntKey();
+    int valueId = keyValueId.getIntValue();
     ret._preFilters.add(oshEntitiy -> oshEntitiy.hasTagKey(keyId));
     ret._filters.add(osmEntity -> osmEntity.hasTagValue(keyId, valueId));
     return ret;
@@ -464,7 +466,7 @@ public abstract class MapReducer<X> implements
   public MapReducer<X> osmTag(String key, Collection<String> values) {
     MapReducer<X> ret = this.copy();
     OSHDBTagKey oshdbKey = this._getTagTranslator().getOSHDBTagKeyOf(key);
-    int keyId = oshdbKey.toInt();
+    int keyId = oshdbKey.getIntKey();
     if (!oshdbKey.isPresentInKeytables() || values.size() == 0) {
       LOG.warn((values.size() > 0 ? "Tag key {} not found." : "Empty tag value list.")
           + " No data will match this filter.", key);
@@ -478,16 +480,15 @@ public abstract class MapReducer<X> implements
       if (!keyValueId.isPresentInKeytables()) {
         LOG.warn("Tag {}={} not found. No data will match this tag value.", key, value);
       } else {
-        valueIds.add(keyValueId.getValue());
+        valueIds.add(keyValueId.getIntValue());
       }
     }
     ret._preFilters.add(oshEntitiy -> oshEntitiy.hasTagKey(keyId));
     ret._filters.add(osmEntity -> {
-      int[] tags = osmEntity.getRawTags();
-      for (int i = 0; i < tags.length; i += 2) {
-        if (tags[i] > keyId) break;
-        if (tags[i] == keyId) {
-          return valueIds.contains(tags[i+1]);
+      for(OSHDBTag tag: osmEntity.getTags()){
+        if(tag.getIntKey() > keyId) break;
+        if(tag.getIntKey() == keyId){
+          return valueIds.contains(tag.getIntValue());
         }
       }
       return false;
@@ -507,7 +508,7 @@ public abstract class MapReducer<X> implements
   public MapReducer<X> osmTag(String key, Pattern valuePattern) {
     MapReducer<X> ret = this.copy();
     OSHDBTagKey oshdbKey = this._getTagTranslator().getOSHDBTagKeyOf(key);
-    int keyId = oshdbKey.toInt();
+    int keyId = oshdbKey.getIntKey();
     if (!oshdbKey.isPresentInKeytables()) {
       LOG.warn("Tag key {} not found. No data will match this filter.", key);
       ret._preFilters.add(ignored -> false);
@@ -516,11 +517,10 @@ public abstract class MapReducer<X> implements
     }
     ret._preFilters.add(oshEntitiy -> oshEntitiy.hasTagKey(keyId));
     ret._filters.add(osmEntity -> {
-      int[] tags = osmEntity.getRawTags();
-      for (int i = 0; i < tags.length; i += 2) {
-        if (tags[i] > keyId) return false;
-        if (tags[i] == keyId) {
-          String value = this._getTagTranslator().getOSMTagOf(keyId, tags[i + 1]).getValue();
+      for(OSHDBTag tag : osmEntity.getTags()){
+        if(tag.getIntKey() > keyId) return false;
+        if(tag.getIntKey() == keyId){
+          String value = this._getTagTranslator().getOSMTagOf(keyId, tag.getIntValue()).getValue();
           return valuePattern.matcher(value).matches();
         }
       }
@@ -553,13 +553,13 @@ public abstract class MapReducer<X> implements
         LOG.warn("Tag {}={} not found. No data will match this tag value.",
             tag.getKey(), tag.getValue());
       } else {
-        keyIds.add(keyValueId.getKey());
+        keyIds.add(keyValueId.getIntKey());
         keyValueIds.add(keyValueId);
       }
     }
     ret._preFilters.add(oshEntitiy -> {
-      for (int key : oshEntitiy.getRawTagKeys()) {
-        if (keyIds.contains(key)) return true;
+      for (OSHDBTag tag : oshEntitiy.getTags()) {
+        if (keyIds.contains(tag.getIntKey())) return true;
       }
       return false;
     });

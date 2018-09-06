@@ -11,14 +11,16 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.heigit.bigspatialdata.oshdb.OSHDBTimestamp;
+import org.heigit.bigspatialdata.oshdb.OSHDBMember;
+import org.heigit.bigspatialdata.oshdb.OSHDBTag;
 import org.heigit.bigspatialdata.oshdb.grid.GridOSHEntity;
+import org.heigit.bigspatialdata.oshdb.osh.OSHEntities;
 import org.heigit.bigspatialdata.oshdb.osh.OSHEntity;
 import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
-import org.heigit.bigspatialdata.oshdb.osm.OSMMember;
 import org.heigit.bigspatialdata.oshdb.osm.OSMNode;
 import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
 import org.heigit.bigspatialdata.oshdb.osm.OSMWay;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.util.tagInterpreter.TagInterpreter;
 import org.heigit.bigspatialdata.oshdb.util.tagtranslator.OSMTag;
 import org.heigit.bigspatialdata.oshdb.util.tagtranslator.TagTranslator;
@@ -79,32 +81,31 @@ public class JSONTransformer {
 
     properties.add("@uid", entity.getUserId());
 
-    for (int i = 0; i < entity.getRawTags().length; i += 2) {
-      properties = JSONTransformer.addRiskyKey(entity, entity.getRawTags()[i], entity.getRawTags()[i + 1],
+    for(OSHDBTag tag : entity.getTags()) {
+      properties = JSONTransformer.addRiskyKey(entity, tag.getIntKey(), tag.getIntValue(),
           tagtranslator, properties);
     }
+    
 
     // add instance specific attributes
     if (entity instanceof OSMWay) {
       JsonArrayBuilder nd = Json.createArrayBuilder();
       OSMWay way = (OSMWay) entity;
-      for (OSMMember node : way.getRefs()) {
-        nd.add(node.getId());
-      }
+      way.getMembers().forEach(m -> nd.add(m.getId()));
       properties.add("refs", nd);
 
     } else if (entity instanceof OSMRelation) {
       JsonArrayBuilder JSONMembers = Json.createArrayBuilder();
       OSMRelation relation = (OSMRelation) entity;
-      for (OSMMember mem : relation.getMembers()) {
+      for (OSHDBMember mem : relation.getMembers()) {
         JsonObjectBuilder member = Json.createObjectBuilder();
         member.add("type", mem.getType().toString()).add("ref", mem.getId());
         try {
-          member.add("role", tagtranslator.getOSMRoleOf(mem.getRoleId()).toString());
+          member.add("role", tagtranslator.getOSMRoleOf(mem.getRole().getIntRole()).toString());
         } catch (NullPointerException ex) {
           LOG.warn(
               "The TagTranslator could not resolve the member role {} of a member of relation/{}",
-              mem.getRawRoleId(), entity.getId());
+              mem.getRole().getIntRole(), entity.getId());
           member.add("role", "<error: could not resolve>");
         }
         JSONMembers.add(member);
@@ -193,12 +194,10 @@ public class JSONTransformer {
       TagInterpreter areaDecider) {
 
     List<Pair<? extends OSMEntity, OSHDBTimestamp>> entities = new ArrayList<>(1);
-    @SuppressWarnings("unchecked")
-    Iterator<? extends OSMEntity> it = entity.iterator();
-    while (it.hasNext()) {
-      OSMEntity obj = it.next();
-      entities.add(new ImmutablePair<>(obj, obj.getTimestamp()));
-    }
+
+    entity.getVersions().forEach(osm -> {
+      entities.add(new ImmutablePair<OSMEntity, OSHDBTimestamp>(osm, osm.getTimestamp()));
+    });
     return JSONTransformer.multiTransform(entities, tagtranslator, areaDecider);
   }
 
@@ -223,7 +222,8 @@ public class JSONTransformer {
     Iterator<? extends OSHEntity> it = entity.iterator();
     while (it.hasNext()) {
       OSHEntity obj = it.next();
-      entities.add(new ImmutablePair<>(obj.getLatest(), obj.getLatest().getTimestamp()));
+      OSMEntity latest = OSHEntities.getLatest(obj);
+      entities.add(new ImmutablePair<>(latest, latest.getTimestamp()));
     }
     return JSONTransformer.multiTransform(entities, tagtranslator, areaDecider);
   }

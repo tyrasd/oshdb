@@ -1,5 +1,7 @@
 package org.heigit.bigspatialdata.oshdb.util.tagtranslator;
 
+import org.heigit.bigspatialdata.oshdb.OSHDBRole;
+import org.heigit.bigspatialdata.oshdb.OSHDBTag;
 import org.heigit.bigspatialdata.oshdb.TableNames;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -8,8 +10,6 @@ import java.sql.SQLException;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBRole;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBTag;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTagKey;
 import org.heigit.bigspatialdata.oshdb.util.exceptions.OSHDBKeytablesNotFoundException;
 import org.heigit.bigspatialdata.oshdb.util.exceptions.OSHDBTagOrRoleNotFoundException;
@@ -135,14 +135,14 @@ public class TagTranslator {
     OSMTagKey keyString;
     try (PreparedStatement keystmt =
         this.conn.prepareStatement("select TXT from KEY where KEY.ID = ?;")) {
-      keystmt.setInt(1, key.toInt());
+      keystmt.setInt(1, key.getIntKey());
       ResultSet keys = keystmt.executeQuery();
       keys.next();
       keyString = new OSMTagKey(keys.getString("TXT"));
       this.keyToInt.put(keyString, key);
     } catch (SQLException ex) {
       throw new OSHDBTagOrRoleNotFoundException(String.format(
-          "Unable to find tag key id %d in keytables.", key.toInt()
+          "Unable to find tag key id %d in keytables.", key.getIntKey()
       ));
     }
     this.keyToString.put(key, keyString);
@@ -185,7 +185,7 @@ public class TagTranslator {
       tagInt = new OSHDBTag(values.getInt("KEYID"), values.getInt("VALUEID"));
     } catch (SQLException ex) {
       LOG.info("Unable to find tag {}={} in keytables.", tag.getKey(), tag.getValue());
-      tagInt = new OSHDBTag(this.getOSHDBTagKeyOf(tag.getKey()).toInt(), getFakeId(tag.getValue()));
+      tagInt = new OSHDBTag(this.getOSHDBTagKeyOf(tag.getKey()).getIntKey(), getFakeId(tag.getValue()));
     }
     this.tagToString.put(tagInt, tag);
     this.tagToInt.put(tag, tagInt);
@@ -223,15 +223,15 @@ public class TagTranslator {
         this.conn.prepareStatement("select k.TXT as KEYTXT,kv.TXT as VALUETXT from "
             + TableNames.E_KEYVALUE.toString() + " kv inner join " + TableNames.E_KEY.toString()
             + " k on k.ID = kv.KEYID WHERE k.ID = ? and kv.VALUEID = ?;")) {
-      valstmt.setInt(1, tag.getKey());
-      valstmt.setInt(2, tag.getValue());
+      valstmt.setInt(1, tag.getIntKey());
+      valstmt.setInt(2, tag.getIntValue());
       ResultSet values = valstmt.executeQuery();
       values.next();
       tagString = new OSMTag(values.getString("KEYTXT"), values.getString("VALUETXT"));
     } catch (SQLException ex) {
       throw new OSHDBTagOrRoleNotFoundException(String.format(
           "Unable to find tag id %d=%d in keytables.",
-          tag.getKey(), tag.getValue()
+          tag.getIntKey(), tag.getIntValue()
       ));
     }
     // put it in caches
@@ -301,13 +301,13 @@ public class TagTranslator {
     OSMRole roleString;
     try (PreparedStatement Rolestmt = conn
         .prepareStatement("select TXT from " + TableNames.E_ROLE.toString() + " WHERE ID = ?;")) {
-      Rolestmt.setInt(1, role.toInt());
+      Rolestmt.setInt(1, role.getIntRole());
       ResultSet Roles = Rolestmt.executeQuery();
       Roles.next();
       roleString = new OSMRole(Roles.getString("TXT"));
     } catch (SQLException ex) {
       throw new OSHDBTagOrRoleNotFoundException(String.format(
-          "Unable to find role id %d in keytables.", role.toInt()
+          "Unable to find role id %d in keytables.", role.getIntRole()
       ));
     }
     this.roleToInt.put(roleString, role);
