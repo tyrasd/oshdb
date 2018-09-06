@@ -1,7 +1,5 @@
 package org.heigit.bigspatialdata.oshdb;
 
-import java.util.Comparator;
-import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
 import org.heigit.bigspatialdata.oshdb.util.SortOrder;
 
 public abstract class OSHDB {
@@ -17,7 +15,7 @@ public abstract class OSHDB {
   }
 
   public static double longToDouble(long val) {
-    return (double) (val * GEOM_PRECISION);
+    return val * GEOM_PRECISION;
   }
 
   public static final SortOrder sortOrder = SortOrder.DESC;

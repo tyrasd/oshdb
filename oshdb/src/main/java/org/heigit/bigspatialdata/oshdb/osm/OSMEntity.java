@@ -1,15 +1,11 @@
 package org.heigit.bigspatialdata.oshdb.osm;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.stream.IntStream;
-import javax.annotation.Nonnull;
+import com.google.common.collect.Iterables;
+import org.heigit.bigspatialdata.oshdb.OSHDBMember;
 import org.heigit.bigspatialdata.oshdb.OSHDBTag;
 import org.heigit.bigspatialdata.oshdb.OSHDBTimestamp;
-import org.heigit.bigspatialdata.oshdb.OSHDBMember;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTagKey;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTags;
-import com.google.common.collect.Iterables;
 
 public interface OSMEntity extends Comparable<OSMEntity> {
 
