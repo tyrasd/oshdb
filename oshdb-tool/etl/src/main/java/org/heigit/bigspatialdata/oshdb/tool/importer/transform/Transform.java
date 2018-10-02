@@ -117,7 +117,7 @@ public class Transform {
     System.out.println("Transform:");
     System.out.println("avaliable memory: "+availableMemory/1024L/1024L +" mb");
     
-    final Transform transform = Transform.withMaxMemory(availableMemory).withWorkDirectory(workDir);
+    //final Transform transform = Transform.withMaxMemory(availableMemory).withWorkDirectory(workDir);
     final OsmPbfMeta pbfMeta = Extract.pbfMetaData(pbf); 
     
     final TagToIdMapper tag2Id = Transform.getTagToIdMapper(workDir);
@@ -140,7 +140,7 @@ public class Transform {
     if (step.startsWith("a")||step.startsWith("w")) {
       final long mapMemory = availableMemory / 2L;
       final SortedLong2LongMap node2Cell = new SortedLong2LongMap(workDir.resolve("transform_idToCell_" + "node"), mapMemory);
-      long maxMemory = availableMemory - tag2Id.estimatedSize() - mapMemory;
+      long maxMemory = availableMemory - mapMemory;
       if(maxMemory < 100*MB)
         System.out.println("warning: only 100MB memory left for transformation! Increase heapsize -Xmx if possible");
       if(maxMemory < 1*MB)
