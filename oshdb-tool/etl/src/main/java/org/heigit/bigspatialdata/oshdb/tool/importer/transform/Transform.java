@@ -121,7 +121,6 @@ public class Transform {
     final OsmPbfMeta pbfMeta = Extract.pbfMetaData(pbf); 
     
     final TagToIdMapper tag2Id = Transform.getTagToIdMapper(workDir);
-    
     availableMemory -= tag2Id.estimatedSize();
     
     
@@ -155,12 +154,13 @@ public class Transform {
 
     if (step.startsWith("a")||step.startsWith("r")) {
       final RoleToIdMapper role2Id = Transform.getRoleToIdMapper(workDir);
+      availableMemory -= role2Id.estimatedSize();
       final long mapMemory = availableMemory/2L;
       final long mapMemoryNode = mapMemory/3L;
       final SortedLong2LongMap node2Cell = new SortedLong2LongMap(workDir.resolve("transform_idToCell_" + "node"), mapMemoryNode);
       final SortedLong2LongMap way2Cell = new SortedLong2LongMap(workDir.resolve("transform_idToCell_" + "way"), mapMemory - mapMemoryNode);
       
-      long maxMemory = availableMemory - tag2Id.estimatedSize() - role2Id.estimatedSize() - mapMemory;
+      long maxMemory = availableMemory - mapMemory;
       if(maxMemory < 100*MB)
         System.out.println("warning: only 100MB memory left for transformation! Increase heapsize -Xmx if possible");
       if(maxMemory < 1*MB)
