@@ -110,8 +110,9 @@ public class Transform {
     if(workerTotal > 1 && (step.startsWith("a")))
       throw new IllegalArgumentException("step all with totalWorker > 1 is not allwod use step (node,way or relation)");
     
-    final long availableHeapMemory = SizeEstimator.estimateAvailableMemory(); // reserve 1GB for parsing
-    final long availableMemory = availableHeapMemory - Math.max(1*GB, availableHeapMemory/3); //reserve at least 1GB or 1/3 of the total memory    
+    final long availableHeapMemory = SizeEstimator.estimateAvailableMemory(); 
+    long availableMemory = availableHeapMemory - Math.max(1*GB, availableHeapMemory/3); //reserve at least 1GB or 1/3 of the total memory
+    
     
     System.out.println("Transform:");
     System.out.println("avaliable memory: "+availableMemory/1024L/1024L +" mb");
@@ -121,9 +122,11 @@ public class Transform {
     
     final TagToIdMapper tag2Id = Transform.getTagToIdMapper(workDir);
     
-        
+    availableMemory -= tag2Id.estimatedSize();
+    
+    
     if(step.startsWith("a") || step.startsWith("n")){
-      long maxMemory = availableMemory - tag2Id.estimatedSize();
+      long maxMemory = availableMemory;
       if(maxMemory < 100*MB)
         System.out.println("warning: only 100MB memory left for transformation! Increase heapsize -Xmx if possible");
       if(maxMemory < 1*MB)
@@ -136,7 +139,7 @@ public class Transform {
     }
 
     if (step.startsWith("a")||step.startsWith("w")) {
-      final long mapMemory = availableMemory/2L;
+      final long mapMemory = availableMemory / 2L;
       final SortedLong2LongMap node2Cell = new SortedLong2LongMap(workDir.resolve("transform_idToCell_" + "node"), mapMemory);
       long maxMemory = availableMemory - tag2Id.estimatedSize() - mapMemory;
       if(maxMemory < 100*MB)
