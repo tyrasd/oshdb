@@ -132,7 +132,7 @@ public class Transform {
         throw new Exception("to few memory left for transformation. You need to increase JVM heapsize -Xmx for transforming");
       
       System.out.println("maxMemory for transformation: "+maxMemory/1024L/1024L +" mb");
-      System.out.print("start transforming nodes ...");
+      System.out.println("start transforming nodes ...");
       Transform.withMaxMemory(maxMemory).withWorkDirectory(workDir).transformNodes(pbfMeta,maxZoom, tag2Id, worker, workerTotal);
       System.out.println(" done!");
     }
@@ -147,7 +147,7 @@ public class Transform {
         throw new Exception("to few memory left for transformation. You need to increase JVM heapsize -Xmx for transforming");
       
       System.out.println("maxMemory for transformation: "+maxMemory/1024L/1024L +" mb");
-      System.out.print("start transforming ways ...");
+      System.out.println("start transforming ways ...");
       Transform.withMaxMemory(maxMemory).withWorkDirectory(workDir).transformWays(pbfMeta,maxZoom, tag2Id,node2Cell, worker, workerTotal);
       System.out.println(" done!");
     }
@@ -167,7 +167,7 @@ public class Transform {
         throw new Exception("to few memory left for transformation. You need to increase JVM heapsize -Xmx for transforming");
       
       System.out.println("maxMemory for transformation: "+maxMemory/1024L/1024L +" mb");
-      System.out.print("start transforming relations ...");
+      System.out.println("start transforming relations ...");
       Transform.withMaxMemory(maxMemory).withWorkDirectory(workDir).transformRelations(pbfMeta,maxZoom, tag2Id, role2Id, node2Cell, way2Cell, worker, workerTotal);
       System.out.println(" done!");
     }

@@ -210,7 +210,13 @@ public abstract class Transformer {
 
 				final long cellId = entry.getLongKey();
 				final OSHDataContainer container = entry.getValue();
+				final long rawSizeLong = container.sizeInBytesOfData;
+
 				final int rawSize = (int) container.sizeInBytesOfData;
+				if(rawSize < 0){
+				  System.err.println("rawSize is "+rawSize+" longRawSize: "+rawSizeLong);
+				  System.err.println("cellId "+ cellId+" entities:"+container.list.size());
+ 				}
 
 				out.writeLong(cellId);
 				out.writeInt(container.list.size());
@@ -282,9 +288,6 @@ public abstract class Transformer {
 	}
 
 	protected void store(long cellId, long id, LongFunction<byte[]> data) {
-		if (estimatedMemoryUsage > maxMemoryUsage)
-			saveToDisk();
-
 		OSHDataContainer dataContainer = collector.get(cellId);
 		if (dataContainer == null) {
 			dataContainer = new OSHDataContainer();
@@ -296,6 +299,10 @@ public abstract class Transformer {
 		dataContainer.add(data.apply(dataContainer.lastId));
 		dataContainer.lastId = id;
 		estimatedMemoryUsage += dataContainer.estimatedMemoryUsage;
+
+		if(estimatedMemoryUsage >= maxMemoryUsage || dataContainer.sizeInBytesOfData >= 1024L*1024L*1024L){
+			saveToDisk();
+                }
 	}
 
 	protected void store(long cellId, long id, LongFunction<byte[]> data, LongSet nodes) {
