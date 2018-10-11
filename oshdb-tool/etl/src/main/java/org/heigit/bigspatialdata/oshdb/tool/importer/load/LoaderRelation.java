@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
-import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransfomRelation;
+import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHRelation;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHNode;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHWay;
 import org.heigit.bigspatialdata.oshdb.tool.importer.transform.reader.TransformRelationReaders;
@@ -25,12 +25,12 @@ import org.heigit.bigspatialdata.oshdb.tool.importer.transform.reader.TransformR
 public class LoaderRelation extends Loader{
   
   public static interface Handler {
-    public void handleRelationGrid(long cellId, Collection<TransfomRelation> entities,Collection<TransformOSHNode> nodes, Collection<TransformOSHWay> ways);
+    public void handleRelationGrid(long cellId, Collection<TransformOSHRelation> entities,Collection<TransformOSHNode> nodes, Collection<TransformOSHWay> ways);
   }
   
   private static class Grid {
     long cellId;
-    List<TransfomRelation> entities = null;
+    List<TransformOSHRelation> entities = null;
     Set<Long> nodesSet = Collections.emptySet();
     List<TransformOSHNode> nodeforGrid = null;
     
@@ -88,7 +88,7 @@ public class LoaderRelation extends Loader{
       return;
 
     if(reader.getCellId() == -1){
-      Set<TransfomRelation> set = reader.next();
+      Set<TransformOSHRelation> set = reader.next();
       handler.handleRelationGrid(-1, set,Collections.emptyList(),Collections.emptyList());
     }
     
@@ -97,7 +97,7 @@ public class LoaderRelation extends Loader{
       final int zoom = ZGrid.getZoom(cellId);
       currentZoom = zoom;
       
-      final Set<TransfomRelation> entities = reader.next();
+      final Set<TransformOSHRelation> entities = reader.next();
       
       maxZoom = initZoomLevel(maxZoom, zoom, zoomLevel, () -> new Grid());
       
@@ -241,7 +241,7 @@ public class LoaderRelation extends Loader{
     
     while(reader.hasNext()){
       long cellId = reader.getCellId();
-      Optional<TransfomRelation> opt = reader.next().stream().filter(r -> r.getId() == 3798196L).findAny();
+      Optional<TransformOSHRelation> opt = reader.next().stream().filter(r -> r.getId() == 3798196L).findAny();
       if(opt.isPresent()){
         System.out.printf("%d:%d (%d) %s%n",ZGrid.getZoom(cellId),ZGrid.getIdWithoutZoom(cellId),cellId,opt.get());
         break;

@@ -19,7 +19,7 @@ import org.heigit.bigspatialdata.oshdb.osh.OSHWay;
 import org.heigit.bigspatialdata.oshdb.osm.OSMNode;
 import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
 import org.heigit.bigspatialdata.oshdb.osm.OSMWay;
-import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransfomRelation;
+import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHRelation;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHNode;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHWay;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
@@ -142,7 +142,7 @@ public abstract class OSHDBHandler extends LoaderHandler {
 	}
 
 	@Override
-	public void handleRelationGrid(long zId, Collection<TransfomRelation> entities, Collection<TransformOSHNode> nodes,
+	public void handleRelationGrid(long zId, Collection<TransformOSHRelation> entities, Collection<TransformOSHNode> nodes,
 			Collection<TransformOSHWay> ways) {
 		if (zId < 0)
 			return;

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
-import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransfomRelation;
+import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHRelation;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHNode;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHWay;
 
@@ -44,11 +44,11 @@ public class ConsoleHandler extends LoaderHandler{
   }
 
   @Override
-  public void handleRelationGrid(long cellId, Collection<TransfomRelation> entities, Collection<TransformOSHNode> nodes,
+  public void handleRelationGrid(long cellId, Collection<TransformOSHRelation> entities, Collection<TransformOSHNode> nodes,
       Collection<TransformOSHWay> ways) {
     final int zoom = ZGrid.getZoom(cellId);
     final long id = ZGrid.getIdWithoutZoom(cellId);
-    System.out.printf("load relation grid (%d:%d %d) ways:%d nodes:%d ways:%d%n", zoom, id, cellId, entities.size(),
+    System.out.printf("load relation grid (%d:%d %d) rels:%d nodes:%d ways:%d%n", zoom, id, cellId, entities.size(),
         nodes.size(), ways.size());
 
   }
