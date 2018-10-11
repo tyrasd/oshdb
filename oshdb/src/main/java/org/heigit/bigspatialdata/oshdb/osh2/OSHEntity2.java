@@ -1,6 +1,7 @@
 package org.heigit.bigspatialdata.oshdb.osh2;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -48,6 +49,10 @@ public abstract class OSHEntity2 {
     this.dataLength = dataLength;
   }
 
+  public ByteBuffer getData(){
+	  return ByteBuffer.wrap(data, offset, length);
+  }
+  
   public long getId() {
     return id;
   }
@@ -95,7 +100,7 @@ public abstract class OSHEntity2 {
       int versionNumber = 0;
       long timestamp = 0;
       long changeset = 0;
-      int userId = -1;
+      int userId = 0;
       int[] tags = new int[0];
 
       for (OSMEntity version : versions) {

@@ -89,7 +89,7 @@ public class TransformOSHWay extends OSHWay2 {
         nodeIds);
   }
 
-  private TransformOSHWay(final byte[] data, final int offset, final int length, byte header, final long id, final long baseTimestamp,final long baseLongitude, final long baseLatitude, final int dataOffset, final int dataLength, final long[] nodeIds) {
+  public TransformOSHWay(final byte[] data, final int offset, final int length, byte header, final long id, final long baseTimestamp,final long baseLongitude, final long baseLatitude, final int dataOffset, final int dataLength, final long[] nodeIds) {
     super(data, offset, length, header, id, OSHDBBoundingBox.EMPTY, 
         baseTimestamp, baseLongitude, baseLatitude,
         new int[0], 

@@ -107,7 +107,11 @@ public class PageLoader extends CacheLoader<Integer, Page> {
         @Override
         public void accept(int bit) {
           try {
-            value = wrapper.readSInt64()+value; 
+        	  if(bit == 23385){
+        		  System.out.println("debug");
+        	  }
+        	 final long newValue = wrapper.readSInt64();
+            value = newValue+value; 
             map.put(bit, value);
           } catch (IOException e) {
             e.printStackTrace();

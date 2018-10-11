@@ -17,9 +17,9 @@ import org.heigit.bigspatialdata.oshdb.util.byteArray.ByteArrayWrapper;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongSortedSet;
 
-public class TransfomRelation extends OSHRelation2 {
+public class TransformOSHRelation extends OSHRelation2 {
   
-  public static TransfomRelation build(ByteArrayOutputWrapper output, ByteArrayOutputWrapper record,
+  public static TransformOSHRelation build(ByteArrayOutputWrapper output, ByteArrayOutputWrapper record,
       ByteArrayOutputWrapper aux, 
       List<OSMRelation> versions, 
       LongSortedSet nodeIds, LongSortedSet wayIds, 
@@ -44,7 +44,7 @@ public class TransfomRelation extends OSHRelation2 {
     builder.build(output, aux, versions, baseTimestamp, baseLongitude, baseLatitude, nodeOffsets, wayOffsets, Collections.emptyMap());
 
     record.writeByteArray(output.array(), 0, output.length());
-    return TransfomRelation.instance(record.array(), 0, record.length(),baseId,baseTimestamp,baseLongitude,baseLatitude);
+    return TransformOSHRelation.instance(record.array(), 0, record.length(),baseId,baseTimestamp,baseLongitude,baseLatitude);
   }
   
   private static Map<Long, Integer> memberOffsets(LongSortedSet ids, ByteArrayOutputWrapper out) throws IOException{
@@ -69,7 +69,7 @@ public class TransfomRelation extends OSHRelation2 {
     return nodeIds;
   }
   
-  public static TransfomRelation instance(final byte[] data, final int offset, final int length, final long baseId,
+  public static TransformOSHRelation instance(final byte[] data, final int offset, final int length, final long baseId,
       final long baseTimestamp, final long baseLongitude, final long baseLatitude) throws IOException {
 
     final ByteArrayWrapper wrapper = ByteArrayWrapper.newInstance(data, offset, length);
@@ -82,20 +82,20 @@ public class TransfomRelation extends OSHRelation2 {
 
     final int dataOffset = wrapper.getPos();
     final int dataLength = length - (dataOffset - offset);
-    return new TransfomRelation(data, offset, length, header, id, 
+    return new TransformOSHRelation(data, offset, length, header, id, 
         baseTimestamp, baseLongitude, baseLatitude,        
         dataOffset, dataLength, 
         nodeIds,wayIds);
   }
   
-  public static TransfomRelation instance(final byte[] data, final int offset, final int length) throws IOException {
+  public static TransformOSHRelation instance(final byte[] data, final int offset, final int length) throws IOException {
     return instance(data, offset, length, 0, 0, 0, 0);
   }
   
 
   final Map<OSMType,long[]> offsetToId;
   
-  protected TransfomRelation(byte[] data, int offset, int length, byte header, long id, 
+  protected TransformOSHRelation(byte[] data, int offset, int length, byte header, long id, 
       long baseTimestamp, long baseLongitude, long baseLatitude, int dataOffset, int dataLength, long[] nodeIds, long[] wayIds) {
     super(data, offset, length, header, id, OSHDBBoundingBox.EMPTY, baseTimestamp, baseLongitude, baseLatitude, new int[0], dataOffset, dataLength);
 

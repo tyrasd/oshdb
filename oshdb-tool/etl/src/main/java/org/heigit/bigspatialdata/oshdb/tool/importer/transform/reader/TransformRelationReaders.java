@@ -9,18 +9,18 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
-import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransfomRelation;
+import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHRelation;
 
 public class TransformRelationReaders {
-  private static class TransformRelationReader extends TransformReader<TransfomRelation> {
+  private static class TransformRelationReader extends TransformReader<TransformOSHRelation> {
 
     public TransformRelationReader(Path path) throws IOException {
       super(path);
     }
 
     @Override
-    protected TransfomRelation getInstance(byte[] data, int offset, int length, long baseId, long baseTimestamp, long baseLongitude, long baseLatitude) throws IOException {
-      return TransfomRelation.instance(data, offset, length,baseId,baseTimestamp,baseLongitude,baseLatitude);
+    protected TransformOSHRelation getInstance(byte[] data, int offset, int length, long baseId, long baseTimestamp, long baseLongitude, long baseLatitude) throws IOException {
+      return TransformOSHRelation.instance(data, offset, length,baseId,baseTimestamp,baseLongitude,baseLatitude);
     }
   }
 
@@ -50,14 +50,14 @@ public class TransformRelationReaders {
     return queue.peek().getCellId();
   }
   
-  public Set<TransfomRelation> next(){
+  public Set<TransformOSHRelation> next(){
     next.add(queue.poll());
     final long cellId = next.get(0).getCellId();
     while(!queue.isEmpty() && cellId  == queue.peek().cellId){
       next.add(queue.poll());
     }
     //final int size = next.stream().mapToInt(TransformReader::getSize).sum();
-    final Set<TransfomRelation> ret = new TreeSet<>((a,b) -> Long.compare(a.getId(), b.getId()));
+    final Set<TransformOSHRelation> ret = new TreeSet<>((a,b) -> Long.compare(a.getId(), b.getId()));
     next.stream().map(TransformReader::entities).forEach(ret::addAll);    
     next.stream().filter(TransformReader::hasNext).map(r -> {r.next(); return r;}).forEach(r -> queue.add(r));
     next.clear(); 

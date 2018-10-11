@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -309,6 +310,14 @@ public class OSHRelation extends OSHEntity<OSMRelation> implements Serializable 
   }
 
   public static OSHRelation build(final List<OSMRelation> versions, final Collection<OSHNode> nodes,
+	      final Collection<OSHWay> ways, final long baseId, final long baseTimestamp,
+	      final long baseLongitude, final long baseLatitude) throws IOException {
+	  ByteBuffer record = buildRecord(versions, nodes, ways, baseId, baseTimestamp, baseLongitude, baseLatitude);
+      return OSHRelation.instance(record.array(), 0, record.limit(), baseId, baseTimestamp,
+	        baseLongitude, baseLatitude);
+  }
+  
+  public static ByteBuffer buildRecord(final List<OSMRelation> versions, final Collection<OSHNode> nodes,
       final Collection<OSHWay> ways, final long baseId, final long baseTimestamp,
       final long baseLongitude, final long baseLatitude) throws IOException {
     Collections.sort(versions, Collections.reverseOrder());
@@ -487,8 +496,7 @@ public class OSHRelation extends OSHEntity<OSMRelation> implements Serializable 
     }
 
     record.writeByteArray(output.array(), 0, output.length());
-    return OSHRelation.instance(record.array(), 0, record.length(), baseId, baseTimestamp,
-        baseLongitude, baseLatitude);
+    return ByteBuffer.wrap(record.array(),0,record.length());
   }
 
   public void writeTo(ByteArrayOutputWrapper out) throws IOException {

@@ -1,14 +1,9 @@
 package org.heigit.bigspatialdata.oshdb.tool.importer.transform;
 
 import java.io.BufferedOutputStream;
-import java.io.DataOutput;
 import java.io.DataOutputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,11 +20,17 @@ import org.heigit.bigspatialdata.oshdb.tool.importer.util.RoleToIdMapper;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.SizeEstimator;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagId;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagToIdMapper;
-import org.heigit.bigspatialdata.oshdb.tool.importer.util.long2long.SortedLong2LongMap;
+import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.IdToCellSink;
+import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.rocksdb.RocksDbIdToCellSink;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshpbf.parser.osm.v0_6.Entity;
 import org.heigit.bigspatialdata.oshpbf.parser.osm.v0_6.TagText;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.rocksdb.BlockBasedTableConfig;
+import org.rocksdb.EnvOptions;
+import org.rocksdb.Options;
+import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -56,13 +57,11 @@ public abstract class Transformer {
 		}
 	}
 
-	private static final int PAGE_POWER = 17; // ~1MB per page
-
 	private final TagToIdMapper tagToIdMapper;
 	private final RoleToIdMapper roleToIdMapper;
 	private final Long2ObjectAVLTreeMap<OSHDataContainer> collector;
-	private final SortedLong2LongMap.Sink idToCellSink;
-	private final SortedLong2LongMap idToCell;
+
+	private final IdToCellSink idToCellSink;
 
 	private final Map<OSMType, Long2ObjectMap<Roaring64NavigableMap>> typeRefsMaps = new HashMap<>(
 			OSMType.values().length);
@@ -79,6 +78,10 @@ public abstract class Transformer {
 			throws IOException {
 		this(maxMemoryUsage, maxZoom, workDirectory, tagToIdMapper, null, workerId);
 	}
+	
+	static {
+		RocksDB.loadLibrary();
+	}
 
 	public Transformer(long maxMemoryUsage, int maxZoom, Path workDirectory, TagToIdMapper tagToIdMapper,
 			RoleToIdMapper roleToIdMapper, int workerId) throws IOException {
@@ -89,14 +92,20 @@ public abstract class Transformer {
 		this.workerId = workerId;
 		this.collector = new Long2ObjectAVLTreeMap<>(ZGrid.ORDER_DFS_TOP_DOWN);
 		this.grid = new ZGrid(maxZoom);
-
-		this.idToCellSink = new SortedLong2LongMap.Sink(
-				workDirectory.resolve("transform_idToCell_" + type().toString().toLowerCase()), PAGE_POWER);
-		this.idToCell = null; // new
-								// IdToCellMapping(workDirectory.resolve("idToCell_"
-								// + type().toString().toLowerCase()), 100 *
-								// 1024 * 1024);
-
+	
+		try(Options options = new Options();
+			EnvOptions envOptions = new EnvOptions()){
+			// https://github.com/facebook/rocksdb/wiki/RocksDB-Tuning-Guide
+			BlockBasedTableConfig blockTableConfig = new BlockBasedTableConfig();
+			blockTableConfig.setBlockSize(1024L*1024L*1L); // 1MB
+			blockTableConfig.setCacheIndexAndFilterBlocks(true);
+			options.setTableFormatConfig(blockTableConfig);
+			String sstFileName = String.format("transform_idToCell_%s_%02d.sst", type().toString().toLowerCase(),workerId);
+			String sstFilePath = workDirectory.resolve(sstFileName).toString();
+			this.idToCellSink = RocksDbIdToCellSink.open(sstFilePath, options, envOptions);
+		} catch (RocksDBException e) {
+			throw new IOException(e);
+		}
 	}
 
 	public void transform(List<Entity> versions) {
@@ -112,7 +121,11 @@ public abstract class Transformer {
 	public void complete() {
 		System.out.println("COMPLETE");
 		saveToDisk();
-		idToCellSink.close();
+		try {
+			idToCellSink.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public int modifiedVersion(Entity entity) {
@@ -183,28 +196,21 @@ public abstract class Transformer {
 	}
 
 	protected void addIdToCell(long id, long cellId) throws IOException {
-		if (idToCell == null) {
-			idToCellSink.put(id, cellId);
-		} else {
-			final long cell = idToCell.get(id);
-			if (cell != cellId)
-				System.err.println("id" + id + " did not match" + cellId + " stored " + cell);
-		}
+		idToCellSink.put(id, cellId);
 	}
 
 	private void saveToDisk() {
 		if (collector.isEmpty())
 			return;
-		final Path filePath = workDirectory.resolve(
-				String.format("transform_%s_%02d_%02d", type().toString().toLowerCase(), workerId, fileNumber));
+		final String fileName = String.format("transform_%s_%02d_%02d", type().toString().toLowerCase(), workerId, fileNumber);
+		final Path filePath = workDirectory.resolve(fileName);
 		System.out.print("transformer saveToDisk " + filePath.toString() + " ... ");
 		long bytesWritten = 0;
 
 		try (DataOutputStream out = new DataOutputStream(
 				new BufferedOutputStream(new FileOutputStream(filePath.toFile())))) {
 			ObjectIterator<Entry<OSHDataContainer>> iter = collector.long2ObjectEntrySet().iterator();
-			long counter = 0;
-			long lastCellId = -1;
+
 			while (iter.hasNext()) {
 				Entry<OSHDataContainer> entry = iter.next();
 
@@ -213,10 +219,10 @@ public abstract class Transformer {
 				final long rawSizeLong = container.sizeInBytesOfData;
 
 				final int rawSize = (int) container.sizeInBytesOfData;
-				if(rawSize < 0){
-				  System.err.println("rawSize is "+rawSize+" longRawSize: "+rawSizeLong);
-				  System.err.println("cellId "+ cellId+" entities:"+container.list.size());
- 				}
+				if (rawSize < 0) {
+					System.err.println("rawSize is " + rawSize + " longRawSize: " + rawSizeLong);
+					System.err.println("cellId " + cellId + " entities:" + container.list.size());
+				}
 
 				out.writeLong(cellId);
 				out.writeInt(container.list.size());
@@ -228,59 +234,14 @@ public abstract class Transformer {
 					out.write(data);
 					bytesWritten += 4 + data.length;
 				}
-
-				counter++;
-				lastCellId = cellId;
-
 			}
 
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
-//		try (RandomAccessFile out = new RandomAccessFile(filePath.toFile(), "rw");
-//				FileChannel channel = out.getChannel()) {
-//			final ByteBuffer header = ByteBuffer.allocateDirect(8 + 4 + 4);
-//
-//			ObjectIterator<Entry<OSHDataContainer>> iter = collector.long2ObjectEntrySet().iterator();
-//			long counter = 0;
-//			long lastCellId = -1;
-//			while (iter.hasNext()) {
-//				Entry<OSHDataContainer> entry = iter.next();
-//
-//				final long cellId = entry.getLongKey();
-//				final OSHDataContainer container = entry.getValue();
-//				final int rawSize = (int) container.sizeInBytesOfData;
-//
-//				header.clear();
-//				header.putLong(cellId);
-//				header.putInt(container.list.size());
-//				if (rawSize < 0)
-//					System.err.println("saveToDisk rawSize negative " + cellId + " " + container.list.size());
-//				header.putInt(rawSize);
-//				header.flip();
-//
-//				bytesWritten += header.remaining();
-//				channel.write(header);
-//
-//				for (byte[] data : container.list) {
-//					out.writeInt(data.length);
-//					out.write(data);
-//					bytesWritten += 4 + data.length;
-//				}
-//
-//				counter++;
-//				lastCellId = cellId;
-//			}
-//			System.out.println("done! " + bytesWritten + " bytes");
-//		} catch (FileNotFoundException e) {
-//			e.printStackTrace();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
 
 		System.out.println("done! " + bytesWritten + " bytes");
-		
+
 		fileNumber++;
 		collector.clear();
 		typeRefsMaps.clear();
@@ -300,41 +261,21 @@ public abstract class Transformer {
 		dataContainer.lastId = id;
 		estimatedMemoryUsage += dataContainer.estimatedMemoryUsage;
 
-		if(estimatedMemoryUsage >= maxMemoryUsage || dataContainer.sizeInBytesOfData >= 1024L*1024L*1024L){
+		if (estimatedMemoryUsage >= maxMemoryUsage || dataContainer.sizeInBytesOfData >= 1024L * 1024L * 1024L) {
 			saveToDisk();
-                }
+		}
 	}
 
 	protected void store(long cellId, long id, LongFunction<byte[]> data, LongSet nodes) {
 		store(cellId, id, data);
-
-		// Long2ObjectMap<Roaring64NavigableMap>map=typeRefsMaps.computeIfAbsent(OSMType.NODE,k->new
-		// Long2ObjectAVLTreeMap<>(ZGrid.ORDER_DFS_TOP_DOWN))));
-		// Roaring64NavigableMap bitmap=map.computeIfAbsent(cellId,k->new
-		// Roaring64NavigableMap());estimatedMemoryUsage-=bitmap.getLongSizeInBytes();
-		// nodes.forEach(bitmap::add);bitmap.runOptimize();
-		// estimatedMemoryUsage+=bitmap.getLongSizeInBytes();
 	}
 
 	protected void store(long cellId, long id, LongFunction<byte[]> data, LongSet nodes, LongSet ways) {
 		store(cellId, id, data, nodes);
-
-		// Long2ObjectMap<Roaring64NavigableMap>map=typeRefsMaps.computeIfAbsent(OSMType.WAY,k->new
-		// Long2ObjectAVLTreeMap<>(ZGrid.ORDER_DFS_TOP_DOWN))));Roaring64NavigableMap
-		// bitmap=map.computeIfAbsent(cellId,k->new
-		// Roaring64NavigableMap());estimatedMemoryUsage-=bitmap.getLongSizeInBytes();ways.forEach(bitmap::add);bitmap.runOptimize();estimatedMemoryUsage+=bitmap.getLongSizeInBytes();
-
 	}
 
-	protected void store(long cellId, long id, LongFunction<byte[]> data, LongSet nodes, LongSet ways,
-			LongSet relation) {
+	protected void store(long cellId, long id, LongFunction<byte[]> data, LongSet nodes, LongSet ways, LongSet relation) {
 		store(cellId, id, data, nodes, ways);
-
-		// Long2ObjectMap<Roaring64NavigableMap>map=typeRefsMaps.computeIfAbsent(OSMType.RELATION,k->new
-		// Long2ObjectAVLTreeMap<>(ZGrid.ORDER_DFS_TOP_DOWN))));Roaring64NavigableMap
-		// bitmap=map.computeIfAbsent(cellId,k->new
-		// Roaring64NavigableMap());estimatedMemoryUsage-=bitmap.getLongSizeInBytes();relation.forEach(bitmap::add);bitmap.runOptimize();estimatedMemoryUsage+=bitmap.getLongSizeInBytes();
-
 	}
 
 	public abstract void transform(long id, List<Entity> versions);

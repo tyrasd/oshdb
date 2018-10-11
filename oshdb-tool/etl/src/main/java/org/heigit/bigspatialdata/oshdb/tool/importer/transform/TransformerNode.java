@@ -35,8 +35,11 @@ public class TransformerNode extends Transformer {
 
 
   private final long[] lastDataSize = new long[2];
+  private final long debug = 3501087577L;
   public void transform(long id, List<Entity> versions) {
-
+	if(id == debug){
+		System.out.println(debug);
+	}
     final List<OSMNode> nodes = new ArrayList<>(versions.size());
     final Set<Long> cellIds = new TreeSet<>();
     for (Entity version : versions) {
@@ -63,8 +66,8 @@ public class TransformerNode extends Transformer {
       final LongFunction<byte[]> toByteArray = baseId -> {
         try {
           
-          if(id == 25094468){
-            System.out.println("here");
+          if(id == debug){
+            System.out.println("debug");
           }
           
           final TransformOSHNode osh = TransformOSHNode.build(baData, baRecord, baAux, nodes, baseId, 0L, baseLongitude, baseLatitude);
