@@ -241,6 +241,11 @@ public class ZGrid {
   };
 
   public static final Comparator<Long> ORDER_DFS_BOTTOM_UP = (a, b) -> {
+    if(a == -1)
+	    return (b == -1)? 0 : -1;
+	if(b == -1)
+	    return 1;
+	
     final long aZ = getZoom(a);
     final long bZ = getZoom(b);
     if (aZ == bZ) {

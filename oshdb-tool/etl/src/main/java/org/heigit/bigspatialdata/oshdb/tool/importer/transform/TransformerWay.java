@@ -1,6 +1,7 @@
 package org.heigit.bigspatialdata.oshdb.tool.importer.transform;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +10,8 @@ import java.util.function.LongFunction;
 import org.heigit.bigspatialdata.oshdb.osm.OSMMember;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.osm.OSMWay;
+import org.heigit.bigspatialdata.oshdb.tool.importer.CellDataMap;
+import org.heigit.bigspatialdata.oshdb.tool.importer.CellRefMap;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHWay;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagToIdMapper;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.IdToCellSource;
@@ -30,20 +33,15 @@ public class TransformerWay extends Transformer {
   final IdToCellSource nodeToCell;
 
   
-  public TransformerWay(long maxMemory,int maxZoom,Path workDirectory,TagToIdMapper tagToIdMapper,IdToCellSource nodeToCell, int workerId) throws IOException {
-    super(maxMemory,maxZoom, workDirectory,tagToIdMapper,workerId);
+  public TransformerWay(long maxMemory,int maxZoom,Path workDirectory,TagToIdMapper tagToIdMapper,IdToCellSource nodeToCell,CellDataMap cellDataMap, CellRefMap cellRefMap, int workerId) throws IOException {
+    super(maxMemory,maxZoom, workDirectory,tagToIdMapper,cellDataMap,cellRefMap, workerId);
     this.nodeToCell = nodeToCell;
   }
   public OSMType type(){
     return OSMType.WAY;
   }
   
-  private final long[] lastDataSize = new long[2];
-  private long debug = 343231757L;
   public void transform(long id, List<Entity> versions) {
-	 if(id == debug){
-		 System.out.println("debug");
-	 }
     List<OSMWay> ways = new ArrayList<>(versions.size());
     LongSortedSet nodeIds = new LongAVLTreeSet();
     for (Entity version : versions) {
@@ -60,14 +58,14 @@ public class TransformerWay extends Transformer {
     	final long cellId =  findBestFittingCellId(cellIds);
         
     
-      final LongFunction<byte[]> toByteArray = baseId -> {
+      final LongFunction<ByteBuffer> toByteArray = baseId -> {
         try {
       TransformOSHWay osh = TransformOSHWay.build(baData,baRecord,wrapperNodeData,ways,nodeIds,baseId,0,0,0);
          
-      final byte[] record = new byte[baRecord.length()];
-      System.arraycopy(baRecord.array(), 0, record, 0, record.length);
+//      final byte[] record = new byte[baRecord.length()];
+//      System.arraycopy(baRecord.array(), 0, record, 0, record.length);
 
-      return record;
+      return ByteBuffer.wrap(baRecord.array(), 0,baRecord.length());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

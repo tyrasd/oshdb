@@ -26,18 +26,18 @@ public class PbfBlob {
 	public final Fileformat.BlobHeader header;
 	public final Fileformat.Blob content;
 	
-	public final boolean isFirstBlob;
+	public final boolean skipFirst;
 	public final boolean overSoftLimit;
 	
 	
 	private Osmformat.PrimitiveBlock block = null;
 	
 	
-	public PbfBlob(final long pos, final Fileformat.BlobHeader header, final Fileformat.Blob blob,boolean isFirstBlob,boolean overSoftLimit) {
+	public PbfBlob(final long pos, final Fileformat.BlobHeader header, final Fileformat.Blob blob,boolean skipFirst,boolean overSoftLimit) {
 		this.pos = pos;
 		this.header = header;
 		this.content = blob;
-		this.isFirstBlob = isFirstBlob;
+		this.skipFirst = skipFirst;
 		this.overSoftLimit = overSoftLimit;
 	}
 	

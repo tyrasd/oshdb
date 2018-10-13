@@ -20,7 +20,7 @@ public class BlobToOSHIterator implements Iterator<Osh> {
   private Entity nextEntity = null;
   private Osh next = null;;
 
-  public BlobToOSHIterator(PbfBlob blob, Osmformat.PrimitiveBlock block, boolean skipFirst) {
+  public BlobToOSHIterator(PbfBlob blob, Osmformat.PrimitiveBlock block) {
     this.blob = blob;
     this.primitiveIterator = new OsmPrimitveBlockIterator(blob.pos, block,
         EnumSet.of(OSMType.NODE, OSMType.WAY, OSMType.RELATION));
@@ -28,7 +28,7 @@ public class BlobToOSHIterator implements Iterator<Osh> {
       return;
 
     nextEntity = primitiveIterator.next();
-    if (nextEntity.getVersion() != 1 && blob.isFirstBlob && skipFirst) {
+    if (nextEntity.getVersion() != 1 && blob.skipFirst) {
       // skip next versions of the same id
       System.out.println("skip " + nextEntity);
       final long skip = nextEntity.getId();

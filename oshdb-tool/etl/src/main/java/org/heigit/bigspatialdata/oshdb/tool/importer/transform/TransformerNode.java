@@ -1,6 +1,7 @@
 package org.heigit.bigspatialdata.oshdb.tool.importer.transform;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +11,8 @@ import java.util.function.LongFunction;
 
 import org.heigit.bigspatialdata.oshdb.osm.OSMNode;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
+import org.heigit.bigspatialdata.oshdb.tool.importer.CellDataMap;
+import org.heigit.bigspatialdata.oshdb.tool.importer.CellRefMap;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHNode;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagToIdMapper;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
@@ -25,21 +28,23 @@ public class TransformerNode extends Transformer {
   private final ByteArrayOutputWrapper baRecord = new ByteArrayOutputWrapper(1024);
   private final ByteArrayOutputWrapper baAux = new ByteArrayOutputWrapper(1024);
 
-  public TransformerNode(long maxMemory,int maxZoom, Path workDirectory, TagToIdMapper tagToIdMapper, int workerId) throws IOException {
-    super(maxMemory,maxZoom, workDirectory, tagToIdMapper,workerId);
+  public TransformerNode(long maxMemory,int maxZoom, Path workDirectory, TagToIdMapper tagToIdMapper,CellDataMap cellDataMap, CellRefMap cellRefMap, int workerId) throws IOException {
+    super(maxMemory,maxZoom, workDirectory, tagToIdMapper,cellDataMap, cellRefMap, workerId);
   }
 
   public OSMType type() {
     return OSMType.NODE;
   }
 
-
-  private final long[] lastDataSize = new long[2];
-  private final long debug = 3501087577L;
+  long lastId = -1;
   public void transform(long id, List<Entity> versions) {
-	if(id == debug){
-		System.out.println(debug);
+		  
+	if(id < lastId){
+		System.out.println("skipping node! id not in order! id:"+id+" previous id:"+lastId);
+		return;
 	}
+	lastId = id;
+	  
     final List<OSMNode> nodes = new ArrayList<>(versions.size());
     final Set<Long> cellIds = new TreeSet<>();
     for (Entity version : versions) {
@@ -63,19 +68,15 @@ public class TransformerNode extends Transformer {
       final long baseLongitude = bbox.getMinLonLong();
       final long baseLatitude = bbox.getMinLatLong();
 
-      final LongFunction<byte[]> toByteArray = baseId -> {
+      final LongFunction<ByteBuffer> toByteArray = baseId -> {
         try {
-          
-          if(id == debug){
-            System.out.println("debug");
-          }
-          
+                    
           final TransformOSHNode osh = TransformOSHNode.build(baData, baRecord, baAux, nodes, baseId, 0L, baseLongitude, baseLatitude);
                     
-          final byte[] record = new byte[baRecord.length()];
-          System.arraycopy(baRecord.array(), 0, record, 0, record.length);
+//          final byte[] record = new byte[baRecord.length()];
+//          System.arraycopy(baRecord.array(), 0, record, 0, record.length);
                     
-          return record;
+          return ByteBuffer.wrap(baRecord.array(),0,baRecord.length());
         } catch (IOException e) {
           throw new RuntimeException(e);
         }

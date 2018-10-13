@@ -1,4 +1,4 @@
-package org.heigit.bigspatialdata.oshdb.tool.importer.util.reactive;
+package org.heigit.bigspatialdata.oshpbf.parser.util;
 
 import java.util.concurrent.atomic.AtomicReference;
 
