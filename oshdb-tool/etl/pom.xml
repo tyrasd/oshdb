@@ -30,8 +30,6 @@
 			<version>${project.version}</version>
 		</dependency>
 
-
-
 		<dependency>
 			<groupId>io.reactivex.rxjava2</groupId>
 			<artifactId>rxjava</artifactId>
@@ -42,12 +40,6 @@
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>${guava.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.roaringbitmap</groupId>
-			<artifactId>RoaringBitmap</artifactId>
-			<version>0.6.59</version>
 		</dependency>
 
 		<dependency>

@@ -109,7 +109,7 @@ public class Extract {
   private Path workDirectory = Paths.get(".");
   private Path tempDirectory = Paths.get(".");
 
-  public static OsmPbfMeta pbfMetaData(Path pbf) throws InvalidProtocolBufferException {
+  public static OsmPbfMeta pbfMetaData(Path pbf) throws IOException {
     return TypeStartFinder.getMetaData(pbf);
   }
 
@@ -131,7 +131,7 @@ public class Extract {
     return this;
   }
 
-  public ExtractKeyTablesResult extract(ExtractArgs config, int workerId, int workerTotal, boolean keepTemp) {
+  public ExtractKeyTablesResult extract(ExtractArgs config, int workerId, int workerTotal, boolean keepTemp) throws IOException {
     final Path pbf = config.pbf;
     final StatsCollector stats = new StatsCollector(pbf);
     
@@ -150,7 +150,7 @@ public class Extract {
     final long start = workSize * workerId;
     final long softEnd = Math.min(start + workSize, fileLength);
 
-    Flowable<Osh> oshFlow = RxOshPbfReader.readOsh(pbf, start, softEnd, -1,stats::addHeader);
+    Flowable<Osh> oshFlow = RxOshPbfReader.readOsh(pbf, start, softEnd, -1, workerId != 0, stats::addHeader);
     
     oshFlow = oshFlow.doOnNext(osh -> {
       stats.add(osh);
@@ -309,7 +309,7 @@ public class Extract {
     }
   }
   
-  public static void extract(ExtractArgs config) {
+  public static void extract(ExtractArgs config) throws IOException {
     Path pbf = config.pbf;
     Path workDir = config.common.workDir;
     Path tempDir = config.common.tempDir;
@@ -385,7 +385,7 @@ public class Extract {
     
   }
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
     ExtractArgs config = new ExtractArgs();
     JCommander jcom = JCommander.newBuilder().addObject(config).build();
 

@@ -20,7 +20,7 @@ import crosby.binary.Osmformat;
 
 public class TypeStartFinder {
 
-	public static OsmPbfMeta getMetaData(Path pbf) throws InvalidProtocolBufferException {
+	public static OsmPbfMeta getMetaData(Path pbf) throws IOException {
 		OsmPbfMeta meta = new OsmPbfMeta();
 		meta.pbf = pbf;
 		Path metaPath = pbf.getParent().resolve(pbf.getFileName().toString() + ".meta");
@@ -47,7 +47,7 @@ public class TypeStartFinder {
 		long relStart = fileSize;
 		long pos;
 		long count = 0;
-		for (PbfBlob blob : RxOshPbfReader.readBlob(pbf, 0, fileSize, -1).filter(PbfBlob::isData).limit(100)
+		for (PbfBlob blob : RxOshPbfReader.readBlob(pbf, 0, fileSize, -1,false).filter(PbfBlob::isData).limit(100)
 				.blockingIterable()) {
 			switch (getType(blob)) {
 			case NODE:
@@ -106,7 +106,7 @@ public class TypeStartFinder {
 		return meta;
 	}
 
-	public static PbfBlob findWay(Path pbf) throws InvalidProtocolBufferException {
+	public static PbfBlob findWay(Path pbf) throws IOException {
 		long fileSize = pbf.toFile().length();
 
 		long low = 0;
@@ -115,7 +115,7 @@ public class TypeStartFinder {
 		while (high >= low) {
 			long middle = (low + high) / 2;
 
-			Iterator<PbfBlob> blob = RxOshPbfReader.readBlob(pbf, middle, -1, -1).take(2).blockingIterable().iterator();
+			Iterator<PbfBlob> blob = RxOshPbfReader.readBlob(pbf, middle, -1, -1,false).take(2).blockingIterable().iterator();
 
 			if (blob.hasNext()) {
 				PbfBlob b = blob.next();
@@ -147,7 +147,7 @@ public class TypeStartFinder {
 		return null;
 	}
 
-	public static PbfBlob findRelation(Path pbf, long startPos) throws InvalidProtocolBufferException {
+	public static PbfBlob findRelation(Path pbf, long startPos) throws IOException {
 		long fileSize = pbf.toFile().length();
 
 		long low = startPos;
@@ -156,7 +156,7 @@ public class TypeStartFinder {
 		while (high >= low) {
 			long middle = (low + high) / 2;
 
-			Iterator<PbfBlob> blob = RxOshPbfReader.readBlob(pbf, middle, -1, -1).take(2).blockingIterable().iterator();
+			Iterator<PbfBlob> blob = RxOshPbfReader.readBlob(pbf, middle, -1, -1,false).take(2).blockingIterable().iterator();
 
 			if (blob.hasNext()) {
 				PbfBlob b = blob.next();
