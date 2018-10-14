@@ -47,7 +47,7 @@ public class TypeStartFinder {
 		long relStart = fileSize;
 		long pos;
 		long count = 0;
-		for (PbfBlob blob : RxOshPbfReader.readBlob(pbf, 0, fileSize, -1,false).filter(PbfBlob::isData).limit(100)
+		for (PbfBlob blob : RxOshPbfReader.readBlob(pbf, 0, fileSize, fileSize,false).filter(PbfBlob::isData).limit(100)
 				.blockingIterable()) {
 			switch (getType(blob)) {
 			case NODE:
@@ -115,7 +115,7 @@ public class TypeStartFinder {
 		while (high >= low) {
 			long middle = (low + high) / 2;
 
-			Iterator<PbfBlob> blob = RxOshPbfReader.readBlob(pbf, middle, -1, -1,false).take(2).blockingIterable().iterator();
+			Iterator<PbfBlob> blob = RxOshPbfReader.readBlob(pbf, middle, fileSize, fileSize,false).take(2).blockingIterable().iterator();
 
 			if (blob.hasNext()) {
 				PbfBlob b = blob.next();
@@ -156,7 +156,7 @@ public class TypeStartFinder {
 		while (high >= low) {
 			long middle = (low + high) / 2;
 
-			Iterator<PbfBlob> blob = RxOshPbfReader.readBlob(pbf, middle, -1, -1,false).take(2).blockingIterable().iterator();
+			Iterator<PbfBlob> blob = RxOshPbfReader.readBlob(pbf, middle, fileSize, fileSize,false).take(2).blockingIterable().iterator();
 
 			if (blob.hasNext()) {
 				PbfBlob b = blob.next();
