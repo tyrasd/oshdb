@@ -80,8 +80,6 @@ public abstract class Transformer {
 			String sstFileName = String.format("transform_idToCell_%s_%02d.sst", type().toString().toLowerCase(),workerId);
 			String sstFilePath = workDirectory.resolve(sstFileName).toString();
 			this.idToCellSink = RocksDbIdToCellSink.open(sstFilePath, options, envOptions);
-		} catch (RocksDBException e) {
-			throw new IOException(e);
 		}
 		
 		System.out.println(cellDataMap);

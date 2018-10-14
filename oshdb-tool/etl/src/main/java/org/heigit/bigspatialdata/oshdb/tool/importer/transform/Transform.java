@@ -275,8 +275,6 @@ public class Transform {
 				BlockBasedTableConfig blockTableConfig = new BlockBasedTableConfig();
 				blockTableConfig.setBlockSize(1L * 1024L * 1024L); // 1MB
 
-				
-				blockTableConfig.setCacheIndexAndFilterBlocks(true);
 				blockTableConfig.setPinL0FilterAndIndexBlocksInCache(true);
 
 				blockTableConfig.setBlockCache(lruCache);
@@ -325,5 +323,7 @@ public class Transform {
 		transform(config);
 		System.out.println("transform done in " + stopwatch);
 	}
+
+
 
 }
