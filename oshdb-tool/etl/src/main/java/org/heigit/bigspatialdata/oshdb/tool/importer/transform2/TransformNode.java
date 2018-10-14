@@ -25,6 +25,7 @@ import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.util.byteArray.ByteArrayOutputWrapper;
 import org.heigit.bigspatialdata.oshpbf.parser.osm.v0_6.Entity;
 import org.heigit.bigspatialdata.oshpbf.parser.osm.v0_6.Node;
+import org.heigit.bigspatialdata.oshpbf.parser.pbf.BlobReader;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.EnvOptions;
 import org.rocksdb.Options;
@@ -95,6 +96,8 @@ public class TransformNode extends Transformer {
 	
 	
 	public static void main(String[] args) throws IOException {
+		
+		System.out.println(BlobReader.class);
 		
 		Args config = Transform.parse(args);
 		if(config == null)
