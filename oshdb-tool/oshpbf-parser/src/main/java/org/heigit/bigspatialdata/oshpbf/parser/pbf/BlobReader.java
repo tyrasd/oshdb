@@ -10,8 +10,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.heigit.bigspatialdata.oshpbf.parser.util.ByteBufferBackedInputStream;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.io.ByteSource;
