@@ -85,7 +85,7 @@ public class TransformNode extends Transformer {
 		final TransformOSHNode osh = TransformOSHNode.build(baData, baRecord, baAux, nodes, baseId, 0L, baseLongitude, baseLatitude);
 		final ByteBuffer record = ByteBuffer.wrap(baRecord.array(),0,baRecord.length());
 		
-		//store(cellId, record);
+		store(cellId, record);
 		idToCell(id, cellId);
 				
 		return id;
