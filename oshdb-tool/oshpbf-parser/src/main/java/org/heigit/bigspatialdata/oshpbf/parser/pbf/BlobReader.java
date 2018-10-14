@@ -37,6 +37,7 @@ public class BlobReader implements PeekingIterator<PbfBlob>, Closeable {
 	private final long limit;
 	private boolean skipFirst = false;
 	private boolean aligned = false;
+	private long blobId = 0;
 
 	public static BlobReader newInstance(Path pbf, long start, long softLimit, long hardLimit, boolean skipFirst)
 			throws IOException {
@@ -47,7 +48,7 @@ public class BlobReader implements PeekingIterator<PbfBlob>, Closeable {
 
 	public static BlobReader newInstance(InputStream input, long start, long softLimit, long hardLimit,
 			boolean skipFirst) throws IOException {
-		CountingInputStream countingInput = new CountingInputStream(ByteStreams.limit(input, hardLimit));
+		CountingInputStream countingInput = new CountingInputStream(ByteStreams.limit(input,hardLimit));
 		countingInput.skip(start);
 		return new BlobReader(countingInput, softLimit, skipFirst);
 	}
@@ -103,7 +104,7 @@ public class BlobReader implements PeekingIterator<PbfBlob>, Closeable {
 	}
 
 	protected PbfBlob getNext() throws Exception {
-		if (input.available() > 0) {
+		if (input.available() > 0 && input.getCount() < limit ) {
 			return readBlob();
 		}
 		return null;
@@ -131,7 +132,7 @@ public class BlobReader implements PeekingIterator<PbfBlob>, Closeable {
 		long blobPos = input.getCount();
 		readFully(input, buffer, 0, buffer.length);
 		final Fileformat.Blob blob = Fileformat.Blob.PARSER.parseFrom(buffer);
-		PbfBlob pbfBlob = new PbfBlob(headerPos, header, blob, skipFirst, blobPos >= limit);
+		PbfBlob pbfBlob = new PbfBlob(blobId++,headerPos, header, blob, skipFirst, blobPos >= limit);
 		skipFirst = false;
 		// blob.setHeader(header);
 		return pbfBlob;

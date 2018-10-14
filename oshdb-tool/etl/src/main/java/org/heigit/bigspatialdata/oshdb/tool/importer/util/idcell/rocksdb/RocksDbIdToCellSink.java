@@ -34,16 +34,27 @@ public class RocksDbIdToCellSink implements IdToCellSink, Closeable {
 		this.sstFileWriter = sstFileWriter;
 	}
 	
-	public static RocksDbIdToCellSink open(String sstFilePath,Options options, EnvOptions envOptions) throws RocksDBException {
+	public static RocksDbIdToCellSink open(String sstFilePath,Options options, EnvOptions envOptions) throws IOException {
 		SstFileWriter sstFileWriter = new SstFileWriter(envOptions, options);
-		sstFileWriter.open(sstFilePath);
+		try {
+			sstFileWriter.open(sstFilePath);
+		} catch (RocksDBException e) {
+			throw new IOException(e);
+		}
 		
 		return new RocksDbIdToCellSink(sstFileWriter);	
 	}
+	
 	long prevKey = -1;
 	byte[] prevKeyBuffer = new byte[5];
 	long prevValue = -1;
+	boolean first = true;
 	public void put(long key, long value) throws IOException {
+		if(first){
+			System.out.println("First ID in sstfile "+key);
+			first = false;
+		}
+
 		byte[] valBuffer = null;
 		try {
 			
@@ -79,6 +90,7 @@ public class RocksDbIdToCellSink implements IdToCellSink, Closeable {
 	
 	@Override
 	public void close() throws IOException {
+		System.out.println("last id in sst "+prevKey);
 		try {
 			sstFileWriter.finish();
 			sstFileWriter.close();

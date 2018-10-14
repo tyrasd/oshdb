@@ -21,7 +21,7 @@ import crosby.binary.Osmformat;
  *
  */
 public class PbfBlob {
-
+	public final long blobId;
 	public final long pos;
 	public final Fileformat.BlobHeader header;
 	public final Fileformat.Blob content;
@@ -33,12 +33,17 @@ public class PbfBlob {
 	private Osmformat.PrimitiveBlock block = null;
 	
 	
-	public PbfBlob(final long pos, final Fileformat.BlobHeader header, final Fileformat.Blob blob,boolean skipFirst,boolean overSoftLimit) {
+	public PbfBlob(final long blobId, final long pos, final Fileformat.BlobHeader header, final Fileformat.Blob blob,boolean skipFirst,boolean overSoftLimit) {
+		this.blobId = blobId;
 		this.pos = pos;
 		this.header = header;
 		this.content = blob;
 		this.skipFirst = skipFirst;
 		this.overSoftLimit = overSoftLimit;
+	}
+	
+	public long getBlobId(){
+		return blobId;
 	}
 	
 	public long getBlobPos(){

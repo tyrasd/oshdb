@@ -43,6 +43,10 @@ public class BlobToOSHIterator implements Iterator<Osh> {
     }
     next = getNext();
   }
+  
+  public PbfBlob getBlob(){
+	  return blob;
+  }
 
   @Override
   public boolean hasNext() {
@@ -86,7 +90,7 @@ public class BlobToOSHIterator implements Iterator<Osh> {
         if (!blob.overSoftLimit) {
           nextEntity = e;
         }
-        return new Osh(versions.get(0).getVersion() == 1, versions,blob.pos);
+        return new Osh(versions.get(0).getVersion() == 1 && primitiveIterator.hasNext(), versions,blob.pos);
       }
 
       versions.add(e);

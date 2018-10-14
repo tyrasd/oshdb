@@ -44,6 +44,33 @@ public class CellDataMap implements Closeable {
 		memory = new Memory(maxMemory-maxInternalMemory);
 		cellContainerMap = new Long2ObjectAVLTreeMap<>(ZGrid.ORDER_DFS_BOTTOM_UP);
 	}
+	
+	public void add(long cellId, ByteBuffer data) throws IOException{
+		DataContainer c = cellContainerMap.get(cellId);
+		boolean newContainer = false;
+		if (c == null) {
+			c = new DataContainer();
+			cellContainerMap.put(cellId, c);
+			memoryUsage += 100; // we roughly estimate the container size + mapentry;
+			newContainer = true;
+		}
+		
+		if (memory.remaining() < data.limit()|| ((memoryUsage + 8) >= maxInternalMemory) || (c.sizeInBytes + data.limit() >= MAX_CONTAINER_SIZE)){
+			spillToDisk();
+			if(!newContainer){
+				c = new DataContainer();
+				cellContainerMap.put(cellId, c);
+				memoryUsage += 100; 
+			}
+		}
+
+		long pos = memory.pos();
+		c.offsets.add(pos);
+		c.sizeInBytes += data.limit();
+		memory.putInt(data.limit());
+		memory.put(data.array(), data.arrayOffset(), data.limit());
+		memoryUsage += 8; // offset entry
+	}
 
 	public void add(long cellId, long id, LongFunction<ByteBuffer> data) throws IOException {
 		DataContainer c = cellContainerMap.get(cellId);
