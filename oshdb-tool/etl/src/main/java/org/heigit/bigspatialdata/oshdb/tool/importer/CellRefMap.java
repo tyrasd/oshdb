@@ -9,6 +9,7 @@ import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.io.CountingOutputStream;
 import com.google.common.io.Files;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;
@@ -102,8 +103,9 @@ public class CellRefMap implements Closeable {
 		
 		System.out.print("write to disk "+filePath+"  ");
 		Stopwatch stopwatch = Stopwatch.createStarted();
-		long written = 0;
-		try(DataOutputStream out = new DataOutputStream(Files.asByteSink(filePath.toFile()).openBufferedStream())){
+		
+		try(CountingOutputStream cout = new CountingOutputStream(Files.asByteSink(filePath.toFile()).openBufferedStream());
+				DataOutputStream out = new DataOutputStream(cout)){
 			ObjectIterator<Entry<BitmapContainer>> iter = cellContainerMap.long2ObjectEntrySet().iterator();
 			while (iter.hasNext()) {
 				Entry<BitmapContainer> entry = iter.next();
@@ -130,7 +132,7 @@ public class CellRefMap implements Closeable {
 				
 				out.writeLong(cellId);
 				out.writeLong((sizeNodes+sizeWays)+1);
-				out.write(flag);;
+				out.write(flag);
 				if(sizeNodes > 0){
 					container.nodes.serialize(out);
 				}
@@ -139,8 +141,9 @@ public class CellRefMap implements Closeable {
 					container.ways.serialize(out);
 				}
 			}
+			System.out.println(" done. Bytes "+cout.getCount()+" in "+stopwatch);
 		}
-		System.out.println(" done. Bytes "+written+" in "+stopwatch);
+		
 		cellContainerMap.clear();
 		memoryUsage = 0;
 	}

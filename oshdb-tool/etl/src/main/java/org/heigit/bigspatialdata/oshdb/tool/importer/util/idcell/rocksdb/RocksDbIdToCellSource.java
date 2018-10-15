@@ -13,6 +13,7 @@ import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.IdToCellSink;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.IdToCellSource;
 import org.rocksdb.BlockBasedTableConfig;
+import org.rocksdb.Cache;
 import org.rocksdb.EnvOptions;
 import org.rocksdb.IngestExternalFileOptions;
 import org.rocksdb.Options;
@@ -74,6 +75,20 @@ public class RocksDbIdToCellSource implements IdToCellSource {
 		return ZGrid.addZoomToId(id, z);
 	}
 
+	public static RocksDbIdToCellSource open(String path, Cache cache) throws IOException {
+		try(final Options options = new Options()) {
+			BlockBasedTableConfig blockTableConfig = new BlockBasedTableConfig();
+			blockTableConfig.setBlockSize(1L * 1024L * 1024L); // 1MB
+			blockTableConfig.setCacheIndexAndFilterBlocks(true);
+			blockTableConfig.setBlockCache(cache);
+
+			options.setTableFormatConfig(blockTableConfig);
+			options.setOptimizeFiltersForHits(true);
+			options.optimizeForPointLookup(64L * 1024L * 1024L);
+			return open(path,options);
+		}
+	}
+	
 	public static RocksDbIdToCellSource open(String path, Options options) throws IOException {
 		RocksDB db;
 		try {

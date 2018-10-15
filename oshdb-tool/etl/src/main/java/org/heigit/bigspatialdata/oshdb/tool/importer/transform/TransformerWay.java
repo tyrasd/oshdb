@@ -30,8 +30,9 @@ public class TransformerWay extends Transformer {
   private final ByteArrayOutputWrapper baRecord = new ByteArrayOutputWrapper(1024);
   private final ByteArrayOutputWrapper wrapperNodeData = new ByteArrayOutputWrapper(1024);
   
-  final IdToCellSource nodeToCell;
-
+  private final IdToCellSource nodeToCell;
+  
+ 
   
   public TransformerWay(long maxMemory,int maxZoom,Path workDirectory,TagToIdMapper tagToIdMapper,IdToCellSource nodeToCell,CellDataMap cellDataMap, CellRefMap cellRefMap, int workerId) throws IOException {
     super(maxMemory,maxZoom, workDirectory,tagToIdMapper,cellDataMap,cellRefMap, workerId);

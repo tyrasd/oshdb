@@ -114,9 +114,7 @@ public class TypeStartFinder {
 
 		while (high >= low) {
 			long middle = (low + high) / 2;
-
 			Iterator<PbfBlob> blob = RxOshPbfReader.readBlob(pbf, middle, fileSize, fileSize,false).take(2).blockingIterable().iterator();
-
 			if (blob.hasNext()) {
 				PbfBlob b = blob.next();
 				OSMType type = getType(b);
@@ -141,9 +139,7 @@ public class TypeStartFinder {
 				System.out.println("Found nothing");
 				return null;
 			}
-
 		}
-
 		return null;
 	}
 

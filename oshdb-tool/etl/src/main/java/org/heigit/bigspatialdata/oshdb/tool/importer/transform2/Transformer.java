@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.tool.importer.CellDataMap;
+import org.heigit.bigspatialdata.oshdb.tool.importer.util.RoleToIdMapper;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagId;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagToIdMapper;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.IdToCellSink;
@@ -22,11 +23,18 @@ public abstract class Transformer {
 
 	private final ZGrid grid = new ZGrid(15);
 	private final TagToIdMapper tagToId;
+	private final RoleToIdMapper roleToId; 
 	private final CellDataMap cellDataMap;
 	private final IdToCellSink idToCellSink;
 
+	
 	public Transformer(TagToIdMapper tagToId, CellDataMap cellDataMap, IdToCellSink idToCellSink) {
+		this(tagToId, null, cellDataMap, idToCellSink);
+	}
+	
+	public Transformer(TagToIdMapper tagToId, RoleToIdMapper roleToId, CellDataMap cellDataMap, IdToCellSink idToCellSink) {
 		this.tagToId = tagToId;
+		this.roleToId = roleToId;
 		this.cellDataMap = cellDataMap;
 		this.idToCellSink = idToCellSink;
 	}
@@ -121,6 +129,11 @@ public abstract class Transformer {
 
 		return ret;
 	}
+	
+	public int getRole(String role) {
+		return (roleToId != null) ? roleToId.getRole(role) : 0;
+	}
+	
 
 	protected long getCell(long longitude, long latitude) {
 		return grid.getIdSingleZIdWithZoom(longitude, latitude);

@@ -11,6 +11,7 @@ import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.Memory;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.io.CountingOutputStream;
 import com.google.common.io.Files;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;
@@ -46,6 +47,9 @@ public class CellDataMap implements Closeable {
 	}
 	
 	public void add(long cellId, ByteBuffer data) throws IOException{
+		if(cellId == 792633534418899710L){
+			System.out.println("debug");
+		}
 		DataContainer c = cellContainerMap.get(cellId);
 		boolean newContainer = false;
 		if (c == null) {
@@ -65,6 +69,7 @@ public class CellDataMap implements Closeable {
 		}
 
 		long pos = memory.pos();
+//		System.out.println("p:"+pos+"l:"+data.limit());
 		c.offsets.add(pos);
 		c.sizeInBytes += data.limit();
 		memory.putInt(data.limit());
@@ -111,8 +116,8 @@ public class CellDataMap implements Closeable {
 		
 		System.out.print("write to disk "+filePath+"  ");
 		Stopwatch stopwatch = Stopwatch.createStarted();
-		long written = 0;
-		try(DataOutputStream out = new DataOutputStream(Files.asByteSink(filePath.toFile()).openBufferedStream())){
+		try(CountingOutputStream cout = new CountingOutputStream(Files.asByteSink(filePath.toFile()).openBufferedStream());
+				DataOutputStream out = new DataOutputStream(cout)){
 			ObjectIterator<Entry<DataContainer>> iter = cellContainerMap.long2ObjectEntrySet().iterator();
 			while (iter.hasNext()) {
 				Entry<DataContainer> entry = iter.next();
@@ -123,16 +128,15 @@ public class CellDataMap implements Closeable {
 				out.writeLong(cellId);
 				out.writeInt(container.offsets.size());
 				out.writeInt((int)rawSize);
-				written += 8+4+4;
 				for (long offset : container.offsets) {
 					int length = memory.getInt(offset);
 					out.writeInt(length);
 					memory.write(offset+4,length,out);
-					written += 4+length;
 				}
 			}
+			System.out.println(" done. Bytes "+cout.getCount()+" in "+stopwatch);
 		}
-		System.out.println(" done. Bytes "+written+" in "+stopwatch);
+		
 		cellContainerMap.clear();
 		memory.clear();
 		memoryUsage = 0;

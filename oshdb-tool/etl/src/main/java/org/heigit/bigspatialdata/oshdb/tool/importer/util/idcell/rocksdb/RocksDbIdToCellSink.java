@@ -6,6 +6,7 @@ import java.util.Arrays;
 
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.IdToCellSink;
+import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.EnvOptions;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDBException;
@@ -34,6 +35,17 @@ public class RocksDbIdToCellSink implements IdToCellSink, Closeable {
 		this.sstFileWriter = sstFileWriter;
 	}
 	
+	
+	public static RocksDbIdToCellSink open(String sstFilePath) throws IOException {
+		try(final Options options = new Options(); EnvOptions envOptions = new EnvOptions()) {
+			BlockBasedTableConfig blockTableConfig = new BlockBasedTableConfig();
+			blockTableConfig.setBlockSize(1024L * 1024L * 1L); // 1MB
+			options.setTableFormatConfig(blockTableConfig);
+			options.setWriteBufferSize(1024L * 1024L * 128L); // 128MB
+			options.setOptimizeFiltersForHits(true);
+			return open(sstFilePath, options, envOptions);
+		}
+	}
 	public static RocksDbIdToCellSink open(String sstFilePath,Options options, EnvOptions envOptions) throws IOException {
 		SstFileWriter sstFileWriter = new SstFileWriter(envOptions, options);
 		try {

@@ -9,9 +9,9 @@ import java.util.List;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 public class Memory {
-	private static final int MAX_BUFFER_SIZE = 1024*1024*1024; // GB
+	private static final int MAX_BUFFER_SIZE = 1024 * 1024 * 1024; // GB
 	private static final int[] longByte = new int[] { 0, 8, 16, 24, 32, 40, 48, 56 };
-	
+
 	private final long limit;
 	private final long bufferSize;
 	private final long offsetMask;
@@ -26,7 +26,7 @@ public class Memory {
 	public Memory(long size) {
 		limit = size;
 		bufferSize = Math.min(MAX_BUFFER_SIZE, limit);
-		offsetMask = bufferSize - 1;
+		offsetMask = MAX_BUFFER_SIZE - 1;
 
 		int numBuffers = (int) (limit / bufferSize);
 		if ((numBuffers * bufferSize) < limit)
@@ -51,15 +51,15 @@ public class Memory {
 	public long remaining() {
 		return limit - size;
 	}
-	
-	public void clear(){
+
+	public void clear() {
 		size = 0;
 		buffers.forEach(ByteBuffer::clear);
 		index = 0;
 		buffer = buffers.get(0);
 	}
-	
-	public void putInt(int value){
+
+	public void putInt(int value) {
 		if (buffer.remaining() >= 8)
 			buffer.putInt(value);
 		else {
@@ -75,9 +75,9 @@ public class Memory {
 		}
 		size += 4;
 	}
-	
-	public int getInt(long pos){
-		if (pos > (size - 4))
+
+	public int getInt(long pos) {
+		if (pos >= (size - 4))
 			throw new IndexOutOfBoundsException("pos: " + pos + " size:" + size);
 		int index = getBufferIndex(pos);
 		int offset = getBufferOffset(pos);
@@ -156,7 +156,7 @@ public class Memory {
 
 	public void get(long pos, byte[] dest, int destOffset, int length) throws IOException {
 		if (pos > (size - length))
-			throw new IndexOutOfBoundsException("pos: " + pos + " size:" + size+" length:"+length);
+			throw new IndexOutOfBoundsException("pos: " + pos + " size:" + size + " length:" + length);
 
 		int index = getBufferIndex(pos);
 		int offset = getBufferOffset(pos);
@@ -176,28 +176,29 @@ public class Memory {
 			length -= read;
 		}
 	}
-	
+
 	public void write(long pos, int length, OutputStream out) throws IOException {
-		if (pos > (size - length))
-			throw new IndexOutOfBoundsException("pos: " + pos + " size:" + size);
-		
+		// 197770081:100795908
+		if ((pos + length) > size)
+			throw new IndexOutOfBoundsException("pos: " + pos + "length:" + length + " size:" + size);
+
 		int index = getBufferIndex(pos);
 		int offset = getBufferOffset(pos);
 		ByteBuffer buffer = buffers.get(index++);
-		while(length > 0){
+		while (length > 0) {
 			int read = (int) Math.min(bufferSize - offset, length);
 			buffer.position(offset);
 			out.write(buffer.array(), offset, read);
-			buffer = buffers.get(index++);
 			offset = 0;
 			length -= read;
+			if (length > 0) {
+				buffer = buffers.get(index++);
+			}
 		}
 	}
 
-	
-
 	private int getBufferIndex(long pos) {
-		return (int) (pos / bufferSize);
+		return (int) (pos / MAX_BUFFER_SIZE);
 	}
 
 	private int getBufferOffset(long pos) {
@@ -215,22 +216,21 @@ public class Memory {
 		return "Memory [limit=" + limit + ", bufferSize=" + bufferSize + ", pos=" + size + ", size=" + size
 				+ ", buffers=" + buffers.size() + "]";
 	}
-	
+
 	public static void main(String[] args) {
 		Memory memory = new Memory(1024);
 		System.out.println(memory);
-		
+
 		LongArrayList offsets = new LongArrayList();
-		for(int i=0; i< 10; i++){
+		for (int i = 0; i < 10; i++) {
 			offsets.add(memory.pos());
 			memory.putInt(i);
 		}
-		
+
 		offsets.forEach((long o) -> {
-			System.out.println(o +":"+ memory.getInt(o));
+			System.out.println(o + ":" + memory.getInt(o));
 		});
-		
+
 	}
-	
-	
+
 }
