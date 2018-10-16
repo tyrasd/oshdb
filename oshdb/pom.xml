@@ -80,11 +80,12 @@
 			<artifactId>fastutil</artifactId>
 			<version>${fastutil.version}</version>
 		</dependency>
-
+<!-- 
 		<dependency>
 			<groupId>org.apache.orc</groupId>
 			<artifactId>orc-core</artifactId>
 			<version>1.5.1</version>
 		</dependency>
+		-->
 	</dependencies>
 </project>
