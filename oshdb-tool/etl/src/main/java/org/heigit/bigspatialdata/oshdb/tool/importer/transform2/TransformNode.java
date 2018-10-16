@@ -135,19 +135,7 @@ public class TransformNode extends Transformer {
 	}
 
 	public static void main(String[] args) throws IOException {
-		Args config;
-		// config = Transform.parse(args);
-		config = new Args();
-
-		Path dataDir = Paths.get("/home/rtroilo/data");
-		Path pbf = dataDir.resolve("nepal.osh.pbf");
-		Path workDir = dataDir.resolve("work/nepal4");
-
-		config.pbf = pbf;
-		config.workDir = workDir;
-		config.worker = 0;
-		config.totalWorkers = 1;
-
+		Args config = Transform.parse(args);
 		if (config != null) {
 			TransformNode.transform(config);
 		}
