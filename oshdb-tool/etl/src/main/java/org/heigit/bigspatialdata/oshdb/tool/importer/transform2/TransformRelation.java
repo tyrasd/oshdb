@@ -185,13 +185,13 @@ public class TransformRelation extends Transformer {
 			chunkEnd = Math.min(chunkStart + chunkSize, end);
 		}
 
-		final long availableHeapMemory = SizeEstimator.estimateAvailableMemory();
-		final long memDataMap = availableHeapMemory / 4;
-		final long memLookUp = availableHeapMemory / 4;
-
 		final Transform transform = Transform.of(pbf, chunkStart, chunkEnd, end, workerId);
 		final TagToIdMapper tagToId = TransformerTagRoles.getTagToIdMapper(workDir);
 		final RoleToIdMapper roleToId = TransformerTagRoles.getRoleToIdMapper(workDir);
+		
+		final long availableHeapMemory = SizeEstimator.estimateAvailableMemory();
+		final long memDataMap = (availableHeapMemory-tagToId.estimatedSize()-roleToId.estimatedSize()) / 2;
+		final long memLookUp = availableHeapMemory / 2;
 		final String sstFileName = String.format("transform_idToCell_rel_%02d.sst", workerId);
 		final String sstFilePath = workDir.resolve(sstFileName).toString();
 		final String nodeDbFilePath = workDir.resolve("transform_idToCell_node").toString();

@@ -84,7 +84,7 @@ public class RocksDbIdToCellSource implements IdToCellSource {
 
 			options.setTableFormatConfig(blockTableConfig);
 			options.setOptimizeFiltersForHits(true);
-			options.optimizeForPointLookup(64L * 1024L * 1024L);
+			options.optimizeForPointLookup(1024L);
 			return open(path,options);
 		}
 	}
