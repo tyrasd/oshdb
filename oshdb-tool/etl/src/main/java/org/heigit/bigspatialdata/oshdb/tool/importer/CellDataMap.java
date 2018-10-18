@@ -9,6 +9,7 @@ import java.util.function.LongFunction;
 
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.Memory;
+import org.heigit.bigspatialdata.oshdb.tool.importer.util.cellmapping.CellDataSink;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.io.CountingOutputStream;
@@ -20,7 +21,7 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 
-public class CellDataMap implements Closeable {
+public class CellDataMap implements CellDataSink {
 	private static final int MAX_CONTAINER_SIZE = 1024*1024*1024; // GB
 	
 	private static class DataContainer {

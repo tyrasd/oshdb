@@ -13,6 +13,7 @@ import org.heigit.bigspatialdata.oshdb.tool.importer.CellDataMap;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.RoleToIdMapper;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagId;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagToIdMapper;
+import org.heigit.bigspatialdata.oshdb.tool.importer.util.cellmapping.CellDataSink;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.IdToCellSink;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshpbf.parser.osm.v0_6.Entity;
@@ -24,15 +25,15 @@ public abstract class Transformer {
 	private final ZGrid grid = new ZGrid(15);
 	private final TagToIdMapper tagToId;
 	private final RoleToIdMapper roleToId; 
-	private final CellDataMap cellDataMap;
+	private final CellDataSink cellDataMap;
 	private final IdToCellSink idToCellSink;
 
 	
-	public Transformer(TagToIdMapper tagToId, CellDataMap cellDataMap, IdToCellSink idToCellSink) {
+	public Transformer(TagToIdMapper tagToId, CellDataSink cellDataMap, IdToCellSink idToCellSink) {
 		this(tagToId, null, cellDataMap, idToCellSink);
 	}
 	
-	public Transformer(TagToIdMapper tagToId, RoleToIdMapper roleToId, CellDataMap cellDataMap, IdToCellSink idToCellSink) {
+	public Transformer(TagToIdMapper tagToId, RoleToIdMapper roleToId, CellDataSink cellDataMap, IdToCellSink idToCellSink) {
 		this.tagToId = tagToId;
 		this.roleToId = roleToId;
 		this.cellDataMap = cellDataMap;

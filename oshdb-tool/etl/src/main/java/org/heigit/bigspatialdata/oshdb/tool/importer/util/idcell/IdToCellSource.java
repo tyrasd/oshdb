@@ -9,7 +9,7 @@ import it.unimi.dsi.fastutil.longs.LongSortedSet;
 public interface IdToCellSource extends Closeable{
 
 	
-	public long get(long key) throws IOException;
-	public LongSet get(LongSortedSet keys) throws IOException;
+	public long get(long id) throws IOException;
+	public LongSet get(LongSortedSet idss) throws IOException;
 	
 }

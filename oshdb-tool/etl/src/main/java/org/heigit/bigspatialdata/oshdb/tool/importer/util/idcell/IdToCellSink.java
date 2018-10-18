@@ -5,5 +5,5 @@ import java.io.IOException;
 
 public interface IdToCellSink extends Closeable {
 
-	public void put(long key, long value) throws IOException;
+	public void put(long id, long cellId) throws IOException;
 }

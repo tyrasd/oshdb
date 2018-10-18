@@ -19,6 +19,7 @@ import org.heigit.bigspatialdata.oshdb.tool.importer.transform.TransformerTagRol
 import org.heigit.bigspatialdata.oshdb.tool.importer.transform2.Transform.Args;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.SizeEstimator;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagToIdMapper;
+import org.heigit.bigspatialdata.oshdb.tool.importer.util.cellmapping.CellDataSink;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.IdToCellSink;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.rocksdb.RocksDbIdToCellSink;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
@@ -36,7 +37,7 @@ import com.google.common.base.Stopwatch;
 
 public class TransformNode extends Transformer {
 
-	public TransformNode(TagToIdMapper tagToId, CellDataMap cellDataMap, IdToCellSink idToCellSink) {
+	public TransformNode(TagToIdMapper tagToId, CellDataSink cellDataMap, IdToCellSink idToCellSink) {
 		super(tagToId, cellDataMap, idToCellSink);
 	}
 
@@ -92,8 +93,7 @@ public class TransformNode extends Transformer {
 		return id;
 	}
 
-	public static void transform(Args args) throws IOException {
-		Path workDir = args.workDir;
+	public static void transform(Args args,TagToIdMapper tagToId, CellDataSink cellDataSink, IdToCellSink idToCellSink) throws IOException {
 		Path pbf = args.pbf;
 
 		int workerId = args.worker;
@@ -111,34 +111,14 @@ public class TransformNode extends Transformer {
 			chunkStart = chunkEnd;
 			chunkEnd = Math.min(chunkStart + chunkSize, end);
 		}
-		final long availableHeapMemory = SizeEstimator.estimateAvailableMemory();
-		final long memDataMap = availableHeapMemory / 2;
 
 		final Transform transform = Transform.of(pbf, chunkStart, chunkEnd, end, workerId);
-		final TagToIdMapper tagToId = TransformerTagRoles.getTagToIdMapper(workDir);
-		final String sstFileName = String.format("transform_idToCell_node_%02d.sst", workerId);
-		final String sstFilePath = workDir.resolve(sstFileName).toString();
-		try (final CellDataMap cellDataMap = new CellDataMap(workDir, String.format("transform_node_%02d", workerId),
-				memDataMap); //
-			final IdToCellSink idToCellSink = RocksDbIdToCellSink.open(sstFilePath)) {
+		TransformNode node = new TransformNode(tagToId, cellDataSink, idToCellSink);
+		Stopwatch stopwatch = Stopwatch.createStarted();
+		transform.transform(node, () -> {
+			System.out.println("complete!");
+		});
+		System.out.println(stopwatch);
 
-			TransformNode node = new TransformNode(tagToId, cellDataMap, idToCellSink);
-			Stopwatch stopwatch = Stopwatch.createStarted();
-			transform.transform(node, () -> {
-				System.out.println("complete!");
-			});
-			System.out.println(stopwatch);
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
-
-	public static void main(String[] args) throws IOException {
-		Args config = Transform.parse(args);
-		if (config != null) {
-			TransformNode.transform(config);
-		}
-	}
-
 }
