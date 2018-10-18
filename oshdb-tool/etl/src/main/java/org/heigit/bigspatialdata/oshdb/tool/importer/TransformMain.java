@@ -117,7 +117,7 @@ public class TransformMain {
 							long filePos = id2Cell.getCount();
 							for (long cellId : page) {
 								final int z = ZGrid.getZoom(cellId);
-								final int id = Math.toIntExact(ZGrid.getIdWithoutZoom(cellId));
+								final int id = (cellId == -1)?-1:Math.toIntExact(ZGrid.getIdWithoutZoom(cellId));
 								zoomCellId.clear();
 								zoomCellId.put((byte) z);
 								zoomCellId.putInt(id);
