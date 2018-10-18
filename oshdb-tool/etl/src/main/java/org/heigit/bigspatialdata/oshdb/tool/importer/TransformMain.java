@@ -65,7 +65,7 @@ public class TransformMain {
 
 	private static class Args {
 		@ParametersDelegate
-		Transform.Args transformArgs;
+		Transform.Args transformArgs = new Transform.Args();
 
 		@Parameter(names = { "-s", "--step" }, description = "step for transformation (node|way|relation)", validateWith = StepConverter.class, converter = StepConverter.class, required = true, order = 1)
 		Step step;
