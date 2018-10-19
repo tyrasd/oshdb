@@ -43,10 +43,10 @@ public class PlainIdToCellSource implements IdToCellSource{
 	}
 		
 	public static PlainIdToCellSource get(Path workDir, String idCellIdxGlob) throws IOException{
-		return get(DEFAULT_PAGE_SIZE*5L,workDir,idCellIdxGlob);
+		return get(DEFAULT_PAGE_SIZE,workDir,idCellIdxGlob);
 	}
-	public static PlainIdToCellSource get(long bufferSize, Path workDir, String idCellIdxGlob) throws IOException{
-	
+	public static PlainIdToCellSource get(long pageSize, Path workDir, String idCellIdxGlob) throws IOException{
+		long bufferSize = pageSize * 5;
 		Map<Integer, ByteBuffer[]> indexBufferMap = Maps.newHashMap();
 		ByteBuffer buffer = null;
 		int index = -1;
@@ -90,7 +90,7 @@ public class PlainIdToCellSource implements IdToCellSource{
 		};
 		
 		
-		return new PlainIdToCellSource(bufferSize, loader);
+		return new PlainIdToCellSource(pageSize, loader);
 	}
 	
 	
