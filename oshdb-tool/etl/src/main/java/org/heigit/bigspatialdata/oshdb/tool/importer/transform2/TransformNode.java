@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.heigit.bigspatialdata.oshdb.osm.OSMNode;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.tool.importer.CellDataMap;
@@ -68,6 +69,9 @@ public class TransformNode extends Transformer {
 			final Node node = (Node) version;
 			if (version.isVisible()) {
 				final long zId = getCell(node.getLongitude(), node.getLatitude());
+				if(zId <= 0){
+					System.out.printf("%10d(%2d), %10d %10d -> z:%2d,%10d(%10d)%n",id,version.getVersion(), node.getLongitude(),node.getLatitude(),ZGrid.getIdWithoutZoom(zId),ZGrid.getIdWithoutZoom(zId),zId);
+				}
 				if (zId >= 0) {
 					cellIds.add(zId);
 				} else {
