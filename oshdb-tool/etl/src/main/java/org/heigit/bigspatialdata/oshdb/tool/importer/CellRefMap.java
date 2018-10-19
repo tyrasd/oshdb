@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
+import org.heigit.bigspatialdata.oshdb.tool.importer.util.cellmapping.CellRefSink;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import com.google.common.base.Stopwatch;
@@ -18,7 +19,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 
-public class CellRefMap implements Closeable {
+public class CellRefMap implements CellRefSink {
 	
 	private static class BitmapContainer {
 		Roaring64NavigableMap nodes;
@@ -38,7 +39,7 @@ public class CellRefMap implements Closeable {
 	private int spillNumber = 0;
 	
 	private int counter = 0;
-	private int checkInterval = 10_000;
+	private int checkInterval = 100_000;
 	
 	public CellRefMap(Path workDirectory, String fileName, long maxMemory) {
 		this.workDirectory = workDirectory;
@@ -93,6 +94,8 @@ public class CellRefMap implements Closeable {
 			
 			if(memoryUsage > maxMemory){
 				spillToDisk();
+			}else{
+//				System.out.println("check "+memoryUsage+" < "+maxMemory);
 			}
 		}
 	}

@@ -3,9 +3,11 @@ package org.heigit.bigspatialdata.oshdb.tool.importer;
 import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.heigit.bigspatialdata.oshdb.tool.importer.transform.TransformerTagRoles;
@@ -13,9 +15,13 @@ import org.heigit.bigspatialdata.oshdb.tool.importer.transform2.Transform;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.SizeEstimator;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagToIdMapper;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.cellmapping.CellDataSink;
+import org.heigit.bigspatialdata.oshdb.tool.importer.util.cellmapping.CellRefSink;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.IdToCellSink;
+import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.IdToCellSource;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.plain.PlainIdToCellSink;
+import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.plain.PlainIdToCellSource;
 import org.heigit.bigspatialdata.oshdb.tool.importer.transform2.TransformNode;
+import org.heigit.bigspatialdata.oshdb.tool.importer.transform2.TransformWay;
 
 import com.beust.jcommander.IParameterValidator;
 import com.beust.jcommander.IStringConverter;
@@ -109,27 +115,30 @@ public class TransformMain {
 			final Path id2CellPath = workDir.resolve(String.format("transform_id2cell_node_%02d", workerId));
 			try (CellDataSink cellDataSink = new CellDataMap(workDir, String.format("transform_node_%02d", workerId),
 					availableHeapMemory / 2)) {
-				try (CountingOutputStream id2Cell = new CountingOutputStream(
-						Files.asByteSink(id2CellPath.toFile()).openBufferedStream());
-						DataOutputStream id2CellIdx = new DataOutputStream(Files
-								.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile()).openBufferedStream());
-						IdToCellSink idToCellSink = new PlainIdToCellSink((index, page, size) -> {
-							long filePos = id2Cell.getCount();
-							for (long cellId : page) {
-								final int z = ZGrid.getZoom(cellId);
-								final int id = (cellId == -1)?-1:Math.toIntExact(ZGrid.getIdWithoutZoom(cellId));
-								zoomCellId.clear();
-								zoomCellId.put((byte) z);
-								zoomCellId.putInt(id);
-								id2Cell.write(zoomCellId.array(), 0, zoomCellId.capacity());
-							}
-							id2CellIdx.writeInt(index);
-							id2CellIdx.writeLong(filePos);
-						})) {
+				try (OutputStream id2Cell = Files.asByteSink(id2CellPath.toFile()).openBufferedStream();
+					OutputStream id2CellIdx = Files.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile()).openBufferedStream();
+					IdToCellSink idToCellSink = new PlainIdToCellSink(id2CellIdx,id2Cell)) {
 
 					TransformNode.transform(config.transformArgs, tagToId, cellDataSink, idToCellSink);
 				}
 
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		case Way: {
+			final Path id2CellPath = workDir.resolve(String.format("transform_id2cell_way_%02d", workerId));
+			final long refMemory = 2L*1024*1024*1024;
+			try (CellDataSink cellDataSink = new CellDataMap(workDir, String.format("transform_node_%02d", workerId), (availableHeapMemory / 2) - refMemory);
+				 CellRefSink cellRefSink = new CellRefMap(workDir, String.format("transform_node_%02d", workerId), refMemory)) {
+					try (OutputStream id2Cell = Files.asByteSink(id2CellPath.toFile()).openBufferedStream();
+						OutputStream id2CellIdx = Files.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile()).openBufferedStream();
+						IdToCellSink idToCellSink = new PlainIdToCellSink(id2CellIdx,id2Cell)) {
+					
+					IdToCellSource nodeToCellSource = PlainIdToCellSource.get(workDir, "transform_id2cell_node_*.idx");
+					TransformWay.transform(config.transformArgs,tagToId,cellDataSink,cellRefSink, idToCellSink, nodeToCellSource);
+				}
+				
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

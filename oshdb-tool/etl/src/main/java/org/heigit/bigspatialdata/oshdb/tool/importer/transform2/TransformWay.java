@@ -11,33 +11,26 @@ import java.util.List;
 import org.heigit.bigspatialdata.oshdb.osm.OSMMember;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.osm.OSMWay;
-import org.heigit.bigspatialdata.oshdb.tool.importer.CellDataMap;
-import org.heigit.bigspatialdata.oshdb.tool.importer.CellRefMap;
+
 import org.heigit.bigspatialdata.oshdb.tool.importer.extract.Extract;
 import org.heigit.bigspatialdata.oshdb.tool.importer.extract.data.OsmPbfMeta;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHWay;
-import org.heigit.bigspatialdata.oshdb.tool.importer.transform.TransformerTagRoles;
+
 import org.heigit.bigspatialdata.oshdb.tool.importer.transform2.Transform.Args;
-import org.heigit.bigspatialdata.oshdb.tool.importer.util.SizeEstimator;
+
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagToIdMapper;
+import org.heigit.bigspatialdata.oshdb.tool.importer.util.cellmapping.CellDataSink;
+import org.heigit.bigspatialdata.oshdb.tool.importer.util.cellmapping.CellRefSink;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.IdToCellSink;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.IdToCellSource;
-import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.rocksdb.RocksDbIdToCellSink;
-import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.rocksdb.RocksDbIdToCellSource;
+
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.util.byteArray.ByteArrayOutputWrapper;
 import org.heigit.bigspatialdata.oshpbf.parser.osm.v0_6.Entity;
 import org.heigit.bigspatialdata.oshpbf.parser.osm.v0_6.Way;
-import org.rocksdb.BlockBasedTableConfig;
-import org.rocksdb.EnvOptions;
-import org.rocksdb.IngestExternalFileOptions;
-import org.rocksdb.LRUCache;
-import org.rocksdb.Options;
-import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Iterables;
 
 import it.unimi.dsi.fastutil.longs.LongAVLTreeSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -46,14 +39,14 @@ import it.unimi.dsi.fastutil.longs.LongSortedSet;
 public class TransformWay extends Transformer {
 
 	private final IdToCellSource nodeToCell;
-	private final CellRefMap cellRefMap;
+	private final CellRefSink cellRefMap;
 
 	private final ByteArrayOutputWrapper baData = new ByteArrayOutputWrapper(1024);
 	private final ByteArrayOutputWrapper baRecord = new ByteArrayOutputWrapper(1024);
 	private final ByteArrayOutputWrapper baAux = new ByteArrayOutputWrapper(1024);
 
-	public TransformWay(TagToIdMapper tagToId, CellDataMap cellDataMap, IdToCellSink idToCellSink,
-			IdToCellSource nodeToCell, CellRefMap cellRefMap) {
+	public TransformWay(TagToIdMapper tagToId, CellDataSink cellDataMap, IdToCellSink idToCellSink,
+			IdToCellSource nodeToCell, CellRefSink cellRefMap) {
 		super(tagToId, cellDataMap, idToCellSink);
 		this.nodeToCell = nodeToCell;
 		this.cellRefMap = cellRefMap;
@@ -101,6 +94,9 @@ public class TransformWay extends Transformer {
 
 		final LongSet cellIds = nodeToCell.get(nodeIds);
 		final long cellId = findBestFittingCellId(cellIds);
+		if(cellId <= 0){
+			System.out.printf("brocken? way %10d -> %s : %s%n",id,Iterables.toString(nodeIds),Iterables.toString(cellIds));
+		}
 		final long baseId = 0;
 
 		final TransformOSHWay osh = TransformOSHWay.build(baData, baRecord, baAux, ways, nodeIds, baseId, 0, 0, 0);
@@ -113,38 +109,13 @@ public class TransformWay extends Transformer {
 		return id;
 	}
 
-	private static void ingestIdToCellMapping(Path workDir, String type) throws IOException {
-		String dbFilePath = workDir.resolve("transform_idToCell_" + type).toString();
-		List<String> sstFilePaths = Lists.newArrayList();
-		Files.newDirectoryStream(workDir, "transform_idToCell_" + type + "_*").forEach(path -> {
-			sstFilePaths.add(path.toString());
-		});
-		if (!sstFilePaths.isEmpty()) {
-			try (Options options = new Options()) {
-				options.setCreateIfMissing(true);
-				BlockBasedTableConfig blockTableConfig = new BlockBasedTableConfig();
-				blockTableConfig.setBlockSize(1L * 1024L * 1024L);
-				options.setTableFormatConfig(blockTableConfig);
-				options.setOptimizeFiltersForHits(true);
-				IngestExternalFileOptions ingestExternalFileOptions = new IngestExternalFileOptions();
-				ingestExternalFileOptions.setMoveFiles(true);
-				try (RocksDB db = RocksDB.open(options, dbFilePath)) {
-					db.ingestExternalFile(sstFilePaths, ingestExternalFileOptions);
-				} catch (RocksDBException e) {
-					throw new IOException(e);
-				}
-			}
-		}
-	}
+	public static void transform(Args args, TagToIdMapper tagToId, CellDataSink cellDataSink, CellRefSink cellRefSink,
+			IdToCellSink idToCellSink, IdToCellSource nodeToCellSource) throws IOException {
 
-	public static void transform(Args args) throws IOException {
-		Path workDir = args.workDir;
 		Path pbf = args.pbf;
 
 		int workerId = args.worker;
 		int workerTotal = args.totalWorkers;
-
-		ingestIdToCellMapping(workDir, "node");
 
 		final OsmPbfMeta pbfMeta = Extract.pbfMetaData(pbf);
 		final long start = pbfMeta.wayStart;
@@ -167,39 +138,11 @@ public class TransformWay extends Transformer {
 		}
 
 		final Transform transform = Transform.of(pbf, chunkStart, chunkEnd, end, workerId);
-		final TagToIdMapper tagToId = TransformerTagRoles.getTagToIdMapper(workDir);
-		
-		final long availableHeapMemory = SizeEstimator.estimateAvailableMemory();
-		final long memDataMap = (availableHeapMemory - tagToId.estimatedSize())/2;
-		final long memLookUp = availableHeapMemory / 2;
-		final String sstFileName = String.format("transform_idToCell_way_%02d.sst", workerId);
-		final String sstFilePath = workDir.resolve(sstFileName).toString();
-		final String nodeDbFilePath = workDir.resolve("transform_idToCell_node").toString();
-		try (final CellDataMap cellDataMap = new CellDataMap(workDir, String.format("transform_way_%02d", workerId),memDataMap /2);
-			 final CellRefMap cellRefMap =   new CellRefMap(workDir, String.format("transform_ref_way_%02d", workerId), memDataMap/2 );
-				final IdToCellSink idToCellSink = RocksDbIdToCellSink.open(sstFilePath)) {
-
-			try (final LRUCache lruCache = new LRUCache(memLookUp)) {
-
-				try (IdToCellSource node2Cell = RocksDbIdToCellSource.open(nodeDbFilePath, lruCache)) {
-					TransformWay node = new TransformWay(tagToId, cellDataMap, idToCellSink, node2Cell,cellRefMap);
-					Stopwatch stopwatch = Stopwatch.createStarted();
-					transform.transform(node, () -> {
-						System.out.println("complete!");
-					});
-					System.out.println(stopwatch);
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		final TransformWay node = new TransformWay(tagToId, cellDataSink, idToCellSink, nodeToCellSource, cellRefSink);
+		final Stopwatch stopwatch = Stopwatch.createStarted();
+		transform.transform(node, () -> {
+			System.out.println("complete!");
+		});
+		System.out.println(stopwatch);
 	}
-
-	public static void main(String[] args) throws IOException {
-		Args config= Transform.parse(args);
-		if (config == null)
-			return;
-		TransformWay.transform(config);
-	}
-
 }
