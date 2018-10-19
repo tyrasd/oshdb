@@ -129,8 +129,8 @@ public class TransformMain {
 		case Way: {
 			final Path id2CellPath = workDir.resolve(String.format("transform_id2cell_way_%02d", workerId));
 			final long refMemory = 2L*1024*1024*1024;
-			try (CellDataSink cellDataSink = new CellDataMap(workDir, String.format("transform_node_%02d", workerId), (availableHeapMemory / 2) - refMemory);
-				 CellRefSink cellRefSink = new CellRefMap(workDir, String.format("transform_node_%02d", workerId), refMemory)) {
+			try (CellDataSink cellDataSink = new CellDataMap(workDir, String.format("transform_way_%02d", workerId), (availableHeapMemory / 2) - refMemory);
+				 CellRefSink cellRefSink = new CellRefMap(workDir, String.format("transform_ref_way_%02d", workerId), refMemory)) {
 					try (OutputStream id2Cell = Files.asByteSink(id2CellPath.toFile()).openBufferedStream();
 						OutputStream id2CellIdx = Files.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile()).openBufferedStream();
 						IdToCellSink idToCellSink = new PlainIdToCellSink(id2CellIdx,id2Cell)) {
