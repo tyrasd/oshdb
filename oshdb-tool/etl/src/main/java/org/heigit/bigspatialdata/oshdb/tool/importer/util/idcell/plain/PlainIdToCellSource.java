@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -51,7 +52,9 @@ public class PlainIdToCellSource implements IdToCellSource{
 		int index = -1;
 		
 		List<Path> indexPaths = Lists.newArrayList(Files.newDirectoryStream(workDir, idCellIdxGlob));indexPaths.sort(Comparator.naturalOrder());
+		System.out.println("loading index buffers");
 		for (Path pIndex : indexPaths) {
+			System.out.println(pIndex);
 			String pMap = pIndex.toString();
 			try (DataInputStream indexIn = new DataInputStream(MoreFiles.asByteSource(pIndex).openBufferedStream());
 					RandomAccessFile raf = new RandomAccessFile(pMap.substring(0, pMap.length() - 4), "r");
@@ -73,7 +76,7 @@ public class PlainIdToCellSource implements IdToCellSource{
 			}
 		}
 		indexBufferMap.put(index, new ByteBuffer[] { buffer });
-		
+		System.out.println("index loaded "+indexBufferMap.size());
 		Loader loader = new Loader(){
 			@Override
 			public void close() throws IOException {
@@ -114,6 +117,9 @@ public class PlainIdToCellSource implements IdToCellSource{
 		ByteBuffer[] pages = indexBufferMap.get(idx);
 		
 		ByteBuffer page = pages[0].duplicate();
+		if(off > page.limit()){
+			System.out.printf("id:%10d idx:%4d off:%6d page:%s pages:%s%n",id, idx, off, page, Arrays.toString(pages));
+		}
 		page.position(off);
 		int zoom = page.get();
 		long cellId = page.getInt();
@@ -155,6 +161,7 @@ public class PlainIdToCellSource implements IdToCellSource{
     		
     		if(pages.length > 1){
     			page = pages[1].duplicate();
+    			page.position(off);
     			int z = page.get();
     			long i = page.getInt();
     			if(z > zoom || i > cellId){
