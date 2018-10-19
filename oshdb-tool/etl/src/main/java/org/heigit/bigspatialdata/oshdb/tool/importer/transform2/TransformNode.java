@@ -72,9 +72,9 @@ public class TransformNode extends Transformer {
 			final Node node = (Node) version;
 			if (version.isVisible()) {
 				final long zId = getCell(node.getLongitude(), node.getLatitude());
-				if(zId <= 0){
-					System.out.printf("%10d(%2d), %10d %10d -> z:%2d,%10d(%10d)%n",id,version.getVersion(), node.getLongitude(),node.getLatitude(),ZGrid.getIdWithoutZoom(zId),ZGrid.getIdWithoutZoom(zId),zId);
-				}
+//				if(zId <= 0){
+//					System.out.printf("%10d(%2d), %10d %10d -> z:%2d,%10d(%10d)%n",id,version.getVersion(), node.getLongitude(),node.getLatitude(),ZGrid.getIdWithoutZoom(zId),ZGrid.getIdWithoutZoom(zId),zId);
+//				}
 				if (zId >= 0) {
 					cellIds.add(zId);
 				} else {
@@ -86,7 +86,7 @@ public class TransformNode extends Transformer {
 
 		final long cellId = (cellIds.size() > 0) ? findBestFittingCellId(cellIds) : -1;
 		
-		if(testIds.stream().allMatch(it -> it.longValue() == id)){
+		if(testIds.stream().anyMatch(it -> it.longValue() == id)){
 			System.out.printf("%10d [%s] -> %d%n",id,Iterables.toString(cellIds),cellId);
 		}
 		
