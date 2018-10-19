@@ -155,6 +155,9 @@ public class PlainIdToCellSource implements IdToCellSource{
     		}
     		
     		ByteBuffer page = pages[0].duplicate();
+    		if(off > page.limit()){
+    			System.out.printf("id:%10d idx:%4d off:%6d page:%s pages:%s%n",id, idx, off, page, Arrays.toString(pages));
+    		}
     		page.position(off);
     		int zoom = page.get();
     		long cellId = page.getInt();
