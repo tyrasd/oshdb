@@ -35,6 +35,8 @@ import org.rocksdb.Options;
 import org.rocksdb.RocksDBException;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 public class TransformNode extends Transformer {
 
@@ -61,6 +63,7 @@ public class TransformNode extends Transformer {
 		return OSMType.NODE;
 	}
 
+	final List<Long> testIds = Lists.newArrayList(103561L, 158334L, 158335L, 158336L);
 	@Override
 	protected long transform(long id, OSMType type, List<Entity> versions) throws IOException {
 		final List<OSMNode> nodes = new ArrayList<>(versions.size());
@@ -82,6 +85,11 @@ public class TransformNode extends Transformer {
 		}
 
 		final long cellId = (cellIds.size() > 0) ? findBestFittingCellId(cellIds) : -1;
+		
+		if(testIds.stream().allMatch(it -> it.longValue() == id)){
+			System.out.printf("%10d [%s] -> %d%n",id,Iterables.toString(cellIds),cellId);
+		}
+		
 		final OSHDBBoundingBox bbox = getCellBounce(cellId);
 		final long baseLongitude = bbox.getMinLonLong();
 		final long baseLatitude = bbox.getMinLatLong();
