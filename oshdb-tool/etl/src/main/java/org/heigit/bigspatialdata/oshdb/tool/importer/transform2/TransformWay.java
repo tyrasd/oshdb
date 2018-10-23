@@ -138,9 +138,9 @@ public class TransformWay extends Transformer {
 		}
 
 		final Transform transform = Transform.of(pbf, chunkStart, chunkEnd, end, workerId);
-		final TransformWay node = new TransformWay(tagToId, cellDataSink, idToCellSink, nodeToCellSource, cellRefSink);
+		final TransformWay tw = new TransformWay(tagToId, cellDataSink, idToCellSink, nodeToCellSource, cellRefSink);
 		final Stopwatch stopwatch = Stopwatch.createStarted();
-		transform.transform(node, () -> {
+		transform.transform(tw, () -> {
 			System.out.println("complete!");
 		});
 		System.out.println(stopwatch);

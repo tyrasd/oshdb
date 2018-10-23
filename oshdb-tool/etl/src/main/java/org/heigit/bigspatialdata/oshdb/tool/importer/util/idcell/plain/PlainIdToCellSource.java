@@ -28,30 +28,32 @@ import it.unimi.dsi.fastutil.longs.LongArraySet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSortedSet;
 
-public class PlainIdToCellSource implements IdToCellSource{
-	
+public class PlainIdToCellSource implements IdToCellSource {
+
 	private static final long DEFAULT_PAGE_SIZE = 1024 * 1024;
 
 	private final long pageSize;
 	private final long pageMask;
-	
 
 	private final Loader indexBufferMap;
-	
-	private static interface Loader extends Closeable  {
+
+	private static interface Loader extends Closeable {
 		public ByteBuffer[] get(Integer index);
 	}
-		
-	public static PlainIdToCellSource get(Path workDir, String idCellIdxGlob) throws IOException{
-		return get(DEFAULT_PAGE_SIZE,workDir,idCellIdxGlob);
+
+	public static PlainIdToCellSource get(Path workDir, String idCellIdxGlob, boolean mapped) throws IOException {
+		return get(DEFAULT_PAGE_SIZE, workDir, idCellIdxGlob, mapped);
 	}
-	public static PlainIdToCellSource get(long pageSize, Path workDir, String idCellIdxGlob) throws IOException{
+
+	public static PlainIdToCellSource get(long pageSize, Path workDir, String idCellIdxGlob, boolean mapped)
+			throws IOException {
 		long bufferSize = pageSize * 5;
 		Map<Integer, ByteBuffer[]> indexBufferMap = Maps.newHashMap();
 		ByteBuffer buffer = null;
 		int index = -1;
-		
-		List<Path> indexPaths = Lists.newArrayList(Files.newDirectoryStream(workDir, idCellIdxGlob));indexPaths.sort(Comparator.naturalOrder());
+
+		List<Path> indexPaths = Lists.newArrayList(Files.newDirectoryStream(workDir, idCellIdxGlob));
+		indexPaths.sort(Comparator.naturalOrder());
 		System.out.println("loading index buffers");
 		for (Path pIndex : indexPaths) {
 			System.out.println(pIndex);
@@ -62,7 +64,13 @@ public class PlainIdToCellSource implements IdToCellSource{
 				while (indexIn.available() > 0) {
 					int idx = indexIn.readInt();
 					long pos = indexIn.readLong();
-					ByteBuffer buf = channel.map(FileChannel.MapMode.READ_ONLY, pos, bufferSize);
+					ByteBuffer buf;
+					if (mapped) {
+						buf = channel.map(FileChannel.MapMode.READ_ONLY, pos, bufferSize);
+					} else {
+						buf = ByteBuffer.allocateDirect((int) bufferSize);
+						channel.read(buf);
+					}
 					if (idx == index) {
 						indexBufferMap.put(index, new ByteBuffer[] { buffer, buf });
 					} else {
@@ -76,8 +84,8 @@ public class PlainIdToCellSource implements IdToCellSource{
 			}
 		}
 		indexBufferMap.put(index, new ByteBuffer[] { buffer });
-		System.out.println("index loaded "+indexBufferMap.size());
-		Loader loader = new Loader(){
+		System.out.println("index loaded " + indexBufferMap.size());
+		Loader loader = new Loader() {
 			@Override
 			public void close() throws IOException {
 				indexBufferMap.clear();
@@ -88,22 +96,20 @@ public class PlainIdToCellSource implements IdToCellSource{
 				return indexBufferMap.get(index);
 			}
 		};
-		
-		
+
 		return new PlainIdToCellSource(pageSize, loader);
 	}
-	
-	
+
 	public PlainIdToCellSource(Loader indexBufferMap) {
 		this(DEFAULT_PAGE_SIZE, indexBufferMap);
 	}
-	
+
 	public PlainIdToCellSource(long pageSize, Loader indexBufferMap) {
 		this.pageSize = Long.highestOneBit(pageSize - 1) << 1;
 		this.pageMask = pageSize - 1;
 		this.indexBufferMap = indexBufferMap;
 	}
-		
+
 	@Override
 	public void close() throws IOException {
 		indexBufferMap.close();
@@ -113,71 +119,72 @@ public class PlainIdToCellSource implements IdToCellSource{
 	public long get(long id) throws IOException {
 		int idx = (int) (id / pageSize);
 		int off = ((int) (id & pageMask)) * 5;
-		
+
 		ByteBuffer[] pages = indexBufferMap.get(idx);
-		
+
 		ByteBuffer page = pages[0].duplicate();
-		if(off > page.limit()){
-			System.out.printf("id:%10d idx:%4d off:%6d page:%s pages:%s%n",id, idx, off, page, Arrays.toString(pages));
+		if (off > page.limit()) {
+			System.out.printf("id:%10d idx:%4d off:%6d page:%s pages:%s%n", id, idx, off, page, Arrays.toString(pages));
 		}
 		page.position(off);
 		int zoom = page.get();
 		long cellId = page.getInt();
-		
-		if(pages.length > 1){
+
+		if (pages.length > 1) {
 			page = pages[1].duplicate();
 			int z = page.get();
 			long i = page.getInt();
-			if(z > zoom || i > cellId){
+			if (z > zoom || i > cellId) {
 				zoom = z;
 				cellId = i;
 			}
-		}				
-		
+		}
+
 		return ZGrid.addZoomToId(cellId, zoom);
 	}
 
 	@Override
 	public LongSet get(LongSortedSet ids) throws IOException {
-        LongSet ret = new LongArraySet(ids.size());
-        
-        ByteBuffer[] pages = new ByteBuffer[0];
-        int lastIdx = -1;
-        long lastCellId = Long.MIN_VALUE;
-        
-        for(long id : ids){
-        	int idx = (int) (id / pageSize);
-    		int off = ((int) (id & pageMask)) * 5;
-    		
-    		if(lastIdx != idx){
-    			pages = indexBufferMap.get(idx);
-    			lastIdx = idx;
-    		}
-    		
-    		ByteBuffer page = pages[0].duplicate();
-    		if(off > page.limit()){
-    			System.out.printf("id:%10d idx:%4d off:%6d page:%s pages:%s%n",id, idx, off, page, Arrays.toString(pages));
-    		}
-    		page.position(off);
-    		int zoom = page.get();
-    		long cellId = page.getInt();
-    		
-    		if(pages.length > 1){
-    			page = pages[1].duplicate();
-    			page.position(off);
-    			int z = page.get();
-    			long i = page.getInt();
-    			if(z > zoom || i > cellId){
-    				zoom = z;
-    				cellId = i;
-    			}
-    		}
-    		cellId = ZGrid.addZoomToId(cellId, zoom);
-    		if(cellId != lastCellId){
-    			ret.add(cellId);
-    		}
-        }
-        
+		LongSet ret = new LongArraySet(ids.size());
+
+		ByteBuffer[] pages = new ByteBuffer[0];
+		int lastIdx = -1;
+		long lastCellId = Long.MIN_VALUE;
+
+		for (long id : ids) {
+			int idx = (int) (id / pageSize);
+			int off = ((int) (id & pageMask)) * 5;
+
+			if (lastIdx != idx) {
+				pages = indexBufferMap.get(idx);
+				lastIdx = idx;
+			}
+
+			ByteBuffer page = pages[0].duplicate();
+			if (off > page.limit()) {
+				System.out.printf("id:%10d idx:%4d off:%6d page:%s pages:%s%n", id, idx, off, page,
+						Arrays.toString(pages));
+			}
+			page.position(off);
+			int zoom = page.get();
+			long cellId = page.getInt();
+
+			if (pages.length > 1) {
+				page = pages[1].duplicate();
+				page.position(off);
+				int z = page.get();
+				long i = page.getInt();
+				if (z > zoom || i > cellId) {
+					zoom = z;
+					cellId = i;
+				}
+			}
+			cellId = ZGrid.addZoomToId(cellId, zoom);
+			if (cellId != lastCellId) {
+				ret.add(cellId);
+			}
+		}
+
 		return ret;
 	}
 

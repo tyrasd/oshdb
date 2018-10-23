@@ -63,7 +63,7 @@ public class TransformNode extends Transformer {
 		return OSMType.NODE;
 	}
 
-	final List<Long> testIds = Lists.newArrayList(103561L, 158334L, 158335L, 158336L);
+	final List<Long> testIds = Lists.newArrayList(200542L,200550L);
 	@Override
 	protected long transform(long id, OSMType type, List<Entity> versions) throws IOException {
 		final List<OSMNode> nodes = new ArrayList<>(versions.size());

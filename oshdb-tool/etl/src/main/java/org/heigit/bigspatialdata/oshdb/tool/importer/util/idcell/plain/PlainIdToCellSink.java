@@ -54,6 +54,10 @@ public class PlainIdToCellSink implements IdToCellSink {
 
 	@Override
 	public void put(long key, long cellId) throws IOException {
+		if(key == 103561L){
+			System.out.println("debug IdToCellSink put "+key);
+		}
+			
 		int index = (int) (key / pageSize);
 		int offset = (int) (key & pageMask);
 
@@ -70,7 +74,8 @@ public class PlainIdToCellSink implements IdToCellSink {
 
 	private void flushPage() throws IOException {
 		long filePos = idCellOut.getCount();
-		for (long cellId : page) {
+		for (int off = 0; off < page.length; off++){
+			long cellId = page[off];
 			final int z = ZGrid.getZoom(cellId);
 			final int id = (cellId == -1) ? -1 : Math.toIntExact(ZGrid.getIdWithoutZoom(cellId));
 			zoomCellId.clear();

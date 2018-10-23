@@ -73,7 +73,8 @@ public class TransformMain {
 		@ParametersDelegate
 		Transform.Args transformArgs = new Transform.Args();
 
-		@Parameter(names = { "-s", "--step" }, description = "step for transformation (node|way|relation)", validateWith = StepConverter.class, converter = StepConverter.class, required = true, order = 1)
+		@Parameter(names = { "-s",
+				"--step" }, description = "step for transformation (node|way|relation)", validateWith = StepConverter.class, converter = StepConverter.class, required = true, order = 1)
 		Step step;
 
 	}
@@ -116,32 +117,39 @@ public class TransformMain {
 			try (CellDataSink cellDataSink = new CellDataMap(workDir, String.format("transform_node_%02d", workerId),
 					availableHeapMemory / 2)) {
 				try (OutputStream id2Cell = Files.asByteSink(id2CellPath.toFile()).openBufferedStream();
-					OutputStream id2CellIdx = Files.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile()).openBufferedStream();
-					IdToCellSink idToCellSink = new PlainIdToCellSink(id2CellIdx,id2Cell)) {
-
+						OutputStream id2CellIdx = Files.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile())
+								.openBufferedStream();
+						IdToCellSink idToCellSink = new PlainIdToCellSink(id2CellIdx, id2Cell)) {
 					TransformNode.transform(config.transformArgs, tagToId, cellDataSink, idToCellSink);
 				}
 
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+			break;
 		}
 		case Way: {
 			final Path id2CellPath = workDir.resolve(String.format("transform_id2cell_way_%02d", workerId));
-			final long refMemory = 2L*1024*1024*1024;
-			try (CellDataSink cellDataSink = new CellDataMap(workDir, String.format("transform_way_%02d", workerId), (availableHeapMemory / 2) - refMemory);
-				 CellRefSink cellRefSink = new CellRefMap(workDir, String.format("transform_ref_way_%02d", workerId), refMemory)) {
-					try (OutputStream id2Cell = Files.asByteSink(id2CellPath.toFile()).openBufferedStream();
-						OutputStream id2CellIdx = Files.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile()).openBufferedStream();
-						IdToCellSink idToCellSink = new PlainIdToCellSink(id2CellIdx,id2Cell)) {
-					
-					IdToCellSource nodeToCellSource = PlainIdToCellSource.get(workDir, "transform_id2cell_node_*.idx");
-					TransformWay.transform(config.transformArgs,tagToId,cellDataSink,cellRefSink, idToCellSink, nodeToCellSource);
+			final long refMemory = 2L * 1024 * 1024 * 1024;
+			try (CellDataSink cellDataSink = new CellDataMap(workDir, String.format("transform_way_%02d", workerId),
+					(availableHeapMemory / 2) - refMemory);
+					CellRefSink cellRefSink = new CellRefMap(workDir, String.format("transform_ref_way_%02d", workerId),
+							refMemory)) {
+				try (OutputStream id2Cell = Files.asByteSink(id2CellPath.toFile()).openBufferedStream();
+						OutputStream id2CellIdx = Files.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile())
+								.openBufferedStream();
+						IdToCellSink idToCellSink = new PlainIdToCellSink(id2CellIdx, id2Cell)) {
+
+					IdToCellSource nodeToCellSource = PlainIdToCellSource.get(workDir, "transform_id2cell_node_*.idx",
+							false);
+					TransformWay.transform(config.transformArgs, tagToId, cellDataSink, cellRefSink, idToCellSink,
+							nodeToCellSource);
 				}
-				
+
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+			break;
 		}
 		}
 	}
