@@ -39,7 +39,7 @@ public class BlobToOSHIterator implements Iterator<Osh> {
           nextEntity = e;
           break;
         }
-        System.out.println("skip " + nextEntity);
+        System.out.println("skip " + e);
       }
     }
     next = getNext();

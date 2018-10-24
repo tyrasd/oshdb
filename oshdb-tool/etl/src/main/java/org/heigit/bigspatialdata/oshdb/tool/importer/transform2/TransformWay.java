@@ -93,12 +93,11 @@ public class TransformWay extends Transformer {
 		}
 
 		final LongSet cellIds = nodeToCell.get(nodeIds);
-		final long cellId = findBestFittingCellId(cellIds);
-		if(cellId <= 0){
+		if(cellIds.contains(0) || cellIds.contains(-1)){
 			System.out.printf("brocken? way %10d -> %s : %s%n",id,Iterables.toString(nodeIds),Iterables.toString(cellIds));
 		}
+		final long cellId = findBestFittingCellId(cellIds);
 		final long baseId = 0;
-
 		final TransformOSHWay osh = TransformOSHWay.build(baData, baRecord, baAux, ways, nodeIds, baseId, 0, 0, 0);
 		final ByteBuffer record = ByteBuffer.wrap(baRecord.array(), 0, baRecord.length());
 
