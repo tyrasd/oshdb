@@ -65,6 +65,9 @@ public class PlainIdToCellSource implements IdToCellSource {
 					int idx = indexIn.readInt();
 					long pos = indexIn.readLong();
 					ByteBuffer buf;
+					
+				
+					
 					if (mapped) {
 						buf = channel.map(FileChannel.MapMode.READ_ONLY, pos, bufferSize);
 					} else {
@@ -75,7 +78,8 @@ public class PlainIdToCellSource implements IdToCellSource {
 						indexBufferMap.put(index, new ByteBuffer[] { buffer, buf });
 					} else {
 						if (buffer != null) {
-							indexBufferMap.put(index, new ByteBuffer[] { buffer });
+							if(!indexBufferMap.containsKey(index))
+								indexBufferMap.put(index, new ByteBuffer[] { buffer });
 						}
 						buffer = buf;
 					}
