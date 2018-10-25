@@ -82,11 +82,11 @@ public class TransformWay extends Transformer {
 
 	@Override
 	protected long transform(long id, OSMType type, List<Entity> versions) throws IOException {
-		final List<OSMWay> ways = new ArrayList<>(versions.size());
+		final List<OSMWay> entities = new ArrayList<>(versions.size());
 		final LongSortedSet nodeIds = new LongAVLTreeSet();
 		for (Entity version : versions) {
 			Way way = (Way) version;
-			ways.add(getOSM(way));
+			entities.add(getOSM(way));
 			for (long ref : way.refs) {
 				nodeIds.add(ref);
 			}
@@ -98,7 +98,7 @@ public class TransformWay extends Transformer {
 		}
 		final long cellId = findBestFittingCellId(cellIds);
 		final long baseId = 0;
-		final TransformOSHWay osh = TransformOSHWay.build(baData, baRecord, baAux, ways, nodeIds, baseId, 0, 0, 0);
+		final TransformOSHWay osh = TransformOSHWay.build(baData, baRecord, baAux, entities, nodeIds, baseId, 0, 0, 0);
 		final ByteBuffer record = ByteBuffer.wrap(baRecord.array(), 0, baRecord.length());
 
 		store(cellId, record);

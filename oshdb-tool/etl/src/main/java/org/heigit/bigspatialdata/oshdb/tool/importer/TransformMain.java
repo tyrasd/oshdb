@@ -21,6 +21,7 @@ import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.IdToCellSource;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.plain.PlainIdToCellSink;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.plain.PlainIdToCellSource;
 import org.heigit.bigspatialdata.oshdb.tool.importer.transform2.TransformNode;
+import org.heigit.bigspatialdata.oshdb.tool.importer.transform2.TransformRelation;
 import org.heigit.bigspatialdata.oshdb.tool.importer.transform2.TransformWay;
 
 import com.beust.jcommander.IParameterValidator;
@@ -144,6 +145,42 @@ public class TransformMain {
 							false);
 					TransformWay.transform(config.transformArgs, tagToId, cellDataSink, cellRefSink, idToCellSink,
 							nodeToCellSource);
+				}
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			break;
+		}
+		case Relation: {
+			final Path id2CellPath = workDir.resolve(String.format("transform_id2cell_relation_%02d", workerId));
+			final long refMemory = 2L * 1024 * 1024 * 1024;
+			try (CellDataSink cellDataSink = new CellDataMap(workDir, String.format("transform_relation_%02d", workerId),(availableHeapMemory / 2) - refMemory);
+				 CellDataSink nonSimpleRelSink = new CellDataSink(){
+					final DataOutputStream out = new DataOutputStream(Files.asByteSink(workDir.resolve(String.format("transform_meta_relation_%02d", workerId)).toFile()).openBufferedStream());
+					@Override
+					public void close() throws IOException {
+						out.close();
+					}
+
+					@Override
+					public void add(long cellId, ByteBuffer data) throws IOException {
+						out.writeInt(data.limit());
+						out.write(data.array(), data.arrayOffset(), data.limit());
+					}
+					 
+				 };
+					CellRefSink cellRefSink = new CellRefMap(workDir, String.format("transform_ref_relation_%02d", workerId),
+							refMemory)) {
+				try (OutputStream id2Cell = Files.asByteSink(id2CellPath.toFile()).openBufferedStream();
+						OutputStream id2CellIdx = Files.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile())
+								.openBufferedStream();
+						IdToCellSink idToCellSink = new PlainIdToCellSink(id2CellIdx, id2Cell)) {
+
+					IdToCellSource nodeToCellSource = PlainIdToCellSource.get(workDir, "transform_id2cell_node_*.idx", false);
+					IdToCellSource wayToCellSource = PlainIdToCellSource.get(workDir, "transform_id2cell_way_*.idx", false);
+					
+					TransformRelation.transform(config.transformArgs, tagToId, cellDataSink,nonSimpleRelSink, cellRefSink, idToCellSink, nodeToCellSource, wayToCellSource);
 				}
 
 			} catch (IOException e) {

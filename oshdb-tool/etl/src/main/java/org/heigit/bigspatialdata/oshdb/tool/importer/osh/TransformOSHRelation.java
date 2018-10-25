@@ -22,7 +22,7 @@ public class TransformOSHRelation extends OSHRelation2 {
   public static TransformOSHRelation build(ByteArrayOutputWrapper output, ByteArrayOutputWrapper record,
       ByteArrayOutputWrapper aux, 
       List<OSMRelation> versions, 
-      LongSortedSet nodeIds, LongSortedSet wayIds, 
+      LongSortedSet nodeIds, LongSortedSet wayIds, LongSortedSet relIds,
       final long baseId, final long baseTimestamp, final long baseLongitude, final long baseLatitude) throws IOException {
     Collections.sort(versions, Collections.reverseOrder());
 
@@ -39,9 +39,10 @@ public class TransformOSHRelation extends OSHRelation2 {
     
     Map<Long, Integer> nodeOffsets = memberOffsets(nodeIds, record);
     Map<Long, Integer> wayOffsets = memberOffsets(wayIds, record);
+    Map<Long, Integer> relOffsets = memberOffsets(relIds, record);
     
     OSHRelation2.OSHRelationBuilder builder =  new OSHRelation2.OSHRelationBuilder();
-    builder.build(output, aux, versions, baseTimestamp, baseLongitude, baseLatitude, nodeOffsets, wayOffsets, Collections.emptyMap());
+    builder.build(output, aux, versions, baseTimestamp, baseLongitude, baseLatitude, nodeOffsets, wayOffsets, relOffsets);
 
     record.writeByteArray(output.array(), 0, output.length());
     return TransformOSHRelation.instance(record.array(), 0, record.length(),baseId,baseTimestamp,baseLongitude,baseLatitude);
@@ -79,13 +80,14 @@ public class TransformOSHRelation extends OSHRelation2 {
 
     final long[] nodeIds = readMemberIds(wrapper);
     final long[] wayIds = readMemberIds(wrapper);
+    final long[] relIds = readMemberIds(wrapper);
 
     final int dataOffset = wrapper.getPos();
     final int dataLength = length - (dataOffset - offset);
     return new TransformOSHRelation(data, offset, length, header, id, 
         baseTimestamp, baseLongitude, baseLatitude,        
         dataOffset, dataLength, 
-        nodeIds,wayIds);
+        nodeIds,wayIds,relIds);
   }
   
   public static TransformOSHRelation instance(final byte[] data, final int offset, final int length) throws IOException {
@@ -96,12 +98,13 @@ public class TransformOSHRelation extends OSHRelation2 {
   final Map<OSMType,long[]> offsetToId;
   
   protected TransformOSHRelation(byte[] data, int offset, int length, byte header, long id, 
-      long baseTimestamp, long baseLongitude, long baseLatitude, int dataOffset, int dataLength, long[] nodeIds, long[] wayIds) {
+      long baseTimestamp, long baseLongitude, long baseLatitude, int dataOffset, int dataLength, long[] nodeIds, long[] wayIds, long[] relIds) {
     super(data, offset, length, header, id, OSHDBBoundingBox.EMPTY, baseTimestamp, baseLongitude, baseLatitude, new int[0], dataOffset, dataLength);
 
-    offsetToId = new HashMap<>(2);
+    offsetToId = new HashMap<>(3);
     offsetToId.put(OSMType.NODE,nodeIds);
     offsetToId.put(OSMType.WAY,wayIds);
+    offsetToId.put(OSMType.RELATION,relIds);
   }
 
   @Override
@@ -122,5 +125,9 @@ public class TransformOSHRelation extends OSHRelation2 {
   public long[] getWayIds(){
     return offsetToId.get(OSMType.WAY);
   }
+  
+  public long[] getRelIds(){
+	    return offsetToId.get(OSMType.RELATION);
+	  }
   
 }

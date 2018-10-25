@@ -48,9 +48,6 @@ public class CellDataMap implements CellDataSink {
 	}
 	
 	public void add(long cellId, ByteBuffer data) throws IOException{
-		if(cellId == 792633534418899710L){
-			System.out.println("debug");
-		}
 		DataContainer c = cellContainerMap.get(cellId);
 		boolean newContainer = false;
 		if (c == null) {
