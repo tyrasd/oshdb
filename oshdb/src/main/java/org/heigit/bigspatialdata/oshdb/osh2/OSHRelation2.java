@@ -58,9 +58,9 @@ public abstract class OSHRelation2 extends OSHEntity2 implements OSH<OSMRelation
             memberOffset = relationOffsets.get(Long.valueOf(member.getId()));
 
           if (memberOffset == null) {
-        	 System.out.printf("OSHRelation2:61 memberOffset == null [id:%d,v:%d, m:%s]%n",version.getId(),version.getVersion(), member);
-            out.writeSInt32(typeId * -1);
-            lastId = out.writeSInt64Delta(memId,lastId);
+        	 System.out.printf("OSHRelation2:61 memberOffset == null [id:%d,v:%d, m:%s, %s]%n",version.getId(),version.getVersion(), member,wayOffsets);
+             out.writeSInt32(typeId * -1);
+             lastId = out.writeSInt64Delta(memId,lastId);
           } else {
             out.writeSInt32(typeId);
             long offset = memberOffset.longValue();
