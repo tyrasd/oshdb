@@ -141,9 +141,9 @@ public class TransformRelation extends Transformer {
 		int workerTotal = args.totalWorkers;
 
 		final OsmPbfMeta pbfMeta = Extract.pbfMetaData(pbf);
-		final long start = pbfMeta.wayStart;
-		final long end = pbfMeta.wayEnd;
-		final long hardEnd = pbfMeta.wayEnd;
+		final long start = pbfMeta.relationStart;
+		final long end = pbfMeta.relationEnd;
+		final long hardEnd = pbfMeta.relationEnd;
 
 		long chunkSize = (long) Math.ceil((double) (end - start) / workerTotal);
 		long chunkStart = start;
