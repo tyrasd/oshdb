@@ -95,9 +95,9 @@ public class TransformRelation extends Transformer {
 				final OSMType memType = member.getType();
 				if (memType == OSMType.NODE) {
 					nodeIds.add(member.getId());
-				} else if (type == OSMType.WAY) {
+				} else if (memType == OSMType.WAY) {
 					wayIds.add(member.getId());
-				}else if (type == OSMType.RELATION){
+				}else if (memType == OSMType.RELATION){
 					relIds.add(member.getId());
 				}
 			}

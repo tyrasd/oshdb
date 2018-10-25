@@ -12,6 +12,8 @@ import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.util.byteArray.ByteArrayOutputWrapper;
 
+import com.google.common.collect.Iterables;
+
 public abstract class OSHRelation2 extends OSHEntity2 implements OSH<OSMRelation> {
 
 
@@ -51,11 +53,11 @@ public abstract class OSHRelation2 extends OSHEntity2 implements OSH<OSMRelation
           final int role = member.getRawRoleId();
           final Integer memberOffset;
           if (type == OSMType.NODE)
-            memberOffset = nodeOffsets.get(Long.valueOf(member.getId()));
+            memberOffset = nodeOffsets.get(Long.valueOf(memId));
           else if (type == OSMType.WAY)
-            memberOffset = wayOffsets.get(Long.valueOf(member.getId()));
+            memberOffset = wayOffsets.get(Long.valueOf(memId));
           else
-            memberOffset = relationOffsets.get(Long.valueOf(member.getId()));
+            memberOffset = relationOffsets.get(Long.valueOf(memId));
 
           if (memberOffset == null) {
         	 System.out.printf("OSHRelation2:61 memberOffset == null [id:%d,v:%d, m:%s, %s]%n",version.getId(),version.getVersion(), member,wayOffsets);
