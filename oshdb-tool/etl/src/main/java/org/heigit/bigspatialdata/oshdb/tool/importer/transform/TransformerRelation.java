@@ -58,6 +58,7 @@ public class TransformerRelation extends Transformer {
 		List<OSMRelation> entities = new ArrayList<>(versions.size());
 		LongSortedSet nodeIds = new LongAVLTreeSet();
 		LongSortedSet wayIds = new LongAVLTreeSet();
+		LongSortedSet relIds = new LongAVLTreeSet();
 		for (Entity version : versions) {
 			final Relation entity = (Relation) version;
 			final OSMRelation osm = getOSM(entity);
@@ -71,6 +72,8 @@ public class TransformerRelation extends Transformer {
 				} else if (type == OSMType.WAY) {
 					wayIds.add(member.getId());
 					bitmapRefWay.add(member.getId());
+				} else if(type == OSMType.RELATION){
+					relIds.add(member.getId());
 				}
 			}
 		}
@@ -89,7 +92,7 @@ public class TransformerRelation extends Transformer {
 			final LongFunction<ByteBuffer> toByteArray = baseId -> {
 				try {
 					TransformOSHRelation osh = TransformOSHRelation.build(wrapperData, wrapperRecord, wrapperNodeData, entities,
-							nodeIds, wayIds, baseId, 0, 0, 0);
+							nodeIds, wayIds,relIds, baseId, 0, 0, 0);
 
 //					final byte[] record = new byte[wrapperRecord.length()];
 //					System.arraycopy(wrapperRecord.array(), 0, record, 0, record.length);
