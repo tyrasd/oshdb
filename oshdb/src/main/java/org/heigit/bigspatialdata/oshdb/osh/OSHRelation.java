@@ -316,16 +316,22 @@ public class OSHRelation extends OSHEntity<OSMRelation> implements Serializable 
       return OSHRelation.instance(record.array(), 0, record.limit(), baseId, baseTimestamp,
 	        baseLongitude, baseLatitude);
   }
-  
   public static ByteBuffer buildRecord(final List<OSMRelation> versions, final Collection<OSHNode> nodes,
+	      final Collection<OSHWay> ways, final long baseId, final long baseTimestamp,
+	      final long baseLongitude, final long baseLatitude) throws IOException {
+	  Collections.sort(versions, Collections.reverseOrder());
+	  long id = versions.get(0).getId();
+	  return buildRecord(id, versions, nodes, ways, baseId, baseTimestamp, baseLongitude, baseLatitude);
+  }
+  
+  public static ByteBuffer buildRecord(final long id, final Iterable<OSMRelation> versions, final Collection<OSHNode> nodes,
       final Collection<OSHWay> ways, final long baseId, final long baseTimestamp,
       final long baseLongitude, final long baseLatitude) throws IOException {
-    Collections.sort(versions, Collections.reverseOrder());
+    
     ByteArrayOutputWrapper output = new ByteArrayOutputWrapper();
 
     OSMMember[] lastMembers = new OSMMember[0];
 
-    long id = versions.get(0).getId();
 
     long minLon = Long.MAX_VALUE;
     long maxLon = Long.MIN_VALUE;
@@ -386,10 +392,11 @@ public class OSHRelation extends OSHEntity<OSMRelation> implements Serializable 
     }
 
     Builder builder = new Builder(output, baseTimestamp);
-    for (int i = 0; i < versions.size(); i++) {
-      OSMRelation relation = versions.get(i);
+    int size = 0;
+    
+    for(OSMRelation relation : versions){
       OSMEntity version = relation;
-
+      size++;
       byte changed = 0;
       OSMMember[] members = relation.getMembers();
       if (version.isVisible() && !Arrays.equals(members, lastMembers)) {
@@ -443,7 +450,7 @@ public class OSHRelation extends OSHEntity<OSMRelation> implements Serializable 
     ByteArrayOutputWrapper record = new ByteArrayOutputWrapper();
 
     byte header = 0;
-    if (versions.size() > 1) {
+    if (size > 1) {
       header |= HEADER_MULTIVERSION;
     }
     if (builder.getTimestampsNotInOrder()) {

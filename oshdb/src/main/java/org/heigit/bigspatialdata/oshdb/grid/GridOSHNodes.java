@@ -28,11 +28,10 @@ public class GridOSHNodes extends GridOSHEntity {
       offset += buffer.length;
     }
     final byte[] data = out.toByteArray();
-    return new GridOSHNodes(id, level, baseId, baseTimestamp, baseLongitude, baseLatitude, index,
-            data);
+    return new GridOSHNodes(id, level, baseId, baseTimestamp, baseLongitude, baseLatitude, index, data);
   }
 
-  private GridOSHNodes(final long id, final int level, final long baseId, final long baseTimestamp,
+  public GridOSHNodes(final long id, final int level, final long baseId, final long baseTimestamp,
           final long baseLongitude, final long baseLatitude, final int[] index, final byte[] data) {
     super(id, level, baseId, baseTimestamp, baseLongitude, baseLatitude, index, data);
   }
@@ -62,7 +61,6 @@ public class GridOSHNodes extends GridOSHEntity {
       }
     };
   }
-
   @Override
   public String toString() {
     return String.format("Grid-Cell of OSHNodes %s", super.toString());

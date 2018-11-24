@@ -14,7 +14,7 @@ import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.byteArray.ByteArrayOutputWrapper;
 import org.heigit.bigspatialdata.oshdb.util.byteArray.ByteArrayWrapper;
 
-public abstract class OSHEntity2 {
+public abstract class OSHEntity2 implements Comparable<OSHEntity2> {
   protected final byte[] data;
   private final int offset;
   private final int length;
@@ -49,6 +49,10 @@ public abstract class OSHEntity2 {
     this.dataLength = dataLength;
   }
 
+  public byte[] getRawData(){
+	  return data;
+  }
+  
   public ByteBuffer getData(){
 	  return ByteBuffer.wrap(data, offset, length);
   }
@@ -207,5 +211,9 @@ public abstract class OSHEntity2 {
   }
   
   
+  @Override
+	public int compareTo(OSHEntity2 o) {
+		return Long.compare(getId(), o.getId());
+	}
   
 }

@@ -237,13 +237,16 @@ public class OSHWay extends OSHEntity<OSMWay> implements Serializable {
 
 	public static ByteBuffer buildRecord(List<OSMWay> versions, Collection<OSHNode> nodes, final long baseId,
 			final long baseTimestamp, final long baseLongitude, final long baseLatitude) throws IOException {
-
 		Collections.sort(versions, Collections.reverseOrder());
+		long id = versions.get(0).getId();
+		return buildRecord(id, versions, nodes, baseId, baseTimestamp, baseLongitude, baseLatitude);
+	}
+	
+	public static ByteBuffer buildRecord(long id, Iterable<OSMWay> versions, Collection<OSHNode> nodes, final long baseId,
+			final long baseTimestamp, final long baseLongitude, final long baseLatitude) throws IOException {
 		ByteArrayOutputWrapper output = new ByteArrayOutputWrapper();
 
 		OSMMember[] lastRefs = new OSMMember[0];
-
-		long id = versions.get(0).getId();
 
 		long minLon = Long.MAX_VALUE;
 		long maxLon = Long.MIN_VALUE;
@@ -280,9 +283,10 @@ public class OSHWay extends OSHEntity<OSMWay> implements Serializable {
 
 		Builder builder = new Builder(output, baseTimestamp);
 
+		int size = 0;
 		for (OSMWay way : versions) {
 			OSMEntity version = way;
-
+			size++;
 			byte changed = 0;
 			OSMMember[] refs = way.getRefs();
 			if (version.isVisible() && !memberEquals(refs, lastRefs)) {
@@ -311,7 +315,7 @@ public class OSHWay extends OSHEntity<OSMWay> implements Serializable {
 		ByteArrayOutputWrapper record = new ByteArrayOutputWrapper();
 
 		byte header = 0;
-		if (versions.size() > 1) {
+		if (size > 1) {
 			header |= HEADER_MULTIVERSION;
 		}
 		if (builder.getTimestampsNotInOrder()) {

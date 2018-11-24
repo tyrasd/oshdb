@@ -84,6 +84,8 @@ public class ZGrid {
   }
 
   public static long getIdWithoutZoom(long zId) {
+	  if(zId == -1)
+		  return -1;
     return zId & ID_MASK;
   }
 

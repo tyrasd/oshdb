@@ -270,7 +270,7 @@ public class OsmPrimitveBlockIterator implements Iterator<Object> {
 			changeset = Long.valueOf(info.getChangeset());
 		}
 
-		boolean visible = false;
+		boolean visible = true;
 		if (info.hasVisible()) {
 			visible = info.getVisible();
 		}

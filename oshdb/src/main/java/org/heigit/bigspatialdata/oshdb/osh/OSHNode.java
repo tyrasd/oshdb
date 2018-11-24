@@ -196,17 +196,21 @@ public class OSHNode extends OSHEntity<OSMNode> implements Iterable<OSMNode>, Se
 		return OSHNode.instance(record.array(), 0, record.limit(), baseId, baseTimestamp, baseLongitude, baseLatitude);
 
 	}
-
 	public static ByteBuffer buildRecord(List<OSMNode> versions, final long baseId, final long baseTimestamp,
 			final long baseLongitude, final long baseLatitude) throws IOException {
 		Collections.sort(versions, Collections.reverseOrder());
+		long id = versions.get(0).getId();
+		return buildRecord(id, versions, baseId, baseTimestamp, baseLongitude, baseLatitude);
+		
+	}
 
+	public static ByteBuffer buildRecord(long id, Iterable<OSMNode> versions, final long baseId, final long baseTimestamp,
+			final long baseLongitude, final long baseLatitude) throws IOException {
 		ByteArrayOutputWrapper output = new ByteArrayOutputWrapper();
 
 		long lastLongitude = baseLongitude;
 		long lastLatitude = baseLatitude;
 
-		long id = versions.get(0).getId();
 
 		long minLon = Long.MAX_VALUE;
 		long maxLon = Long.MIN_VALUE;
@@ -214,10 +218,10 @@ public class OSHNode extends OSHEntity<OSMNode> implements Iterable<OSMNode>, Se
 		long maxLat = Long.MIN_VALUE;
 
 		Builder builder = new Builder(output, baseTimestamp);
-
+		int size=0;
 		for (OSMNode node : versions) {
 			OSMEntity version = node;
-
+			size++;
 			byte changed = 0;
 
 			if (version.isVisible() && (node.getLon() != lastLongitude || node.getLat() != lastLatitude)) {
@@ -241,7 +245,7 @@ public class OSHNode extends OSHEntity<OSMNode> implements Iterable<OSMNode>, Se
 		ByteArrayOutputWrapper record = new ByteArrayOutputWrapper();
 
 		byte header = 0;
-		if (versions.size() > 1) {
+		if (size > 1) {
 			header |= HEADER_MULTIVERSION;
 		}
 		if (builder.getTimestampsNotInOrder()) {
