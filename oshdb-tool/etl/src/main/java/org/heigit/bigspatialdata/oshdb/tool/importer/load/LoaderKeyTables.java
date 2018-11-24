@@ -21,12 +21,16 @@ import org.heigit.bigspatialdata.oshdb.tool.importer.extract.data.VF;
 
 import com.google.common.base.Functions;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+
 public class LoaderKeyTables {
 
   public static interface Handler {
-    public void loadKeyValues(int id, String key, List<String> values);
+    public void loadKeyValues(int id, String key, List<String> values) throws IOException;
 
-    public void loadRole(int id, String role);
+    public void loadRole(int id, String role) throws IOException;
+
+	public void loadKeyValuesInit(int numberKeysToLoad);
   }
 
   Path workDirectory;
@@ -51,21 +55,23 @@ public class LoaderKeyTables {
         final FileChannel valuesChannel = raf.getChannel();) {
 
       final int length = keyIn.readInt();
+      final ObjectArrayList<String> values = new ObjectArrayList<>();
+      
+      handler.loadKeyValuesInit(length);
+      
       for (int i = 0; i < length; i++) {
         final KeyValuePointer kvp = KeyValuePointer.read(keyIn);
 
         final String key = kvp.key;
-        List<String> values = Collections.emptyList();
-       
-        values = new ArrayList<>(kvp.valuesNumber);
-
+        
+        values.clear();
+        values.ensureCapacity(kvp.valuesNumber);
         valuesChannel.position(kvp.valuesOffset);
         DataInputStream valueStream = new DataInputStream(Channels.newInputStream(valuesChannel));
         for (int j = 0; j < kvp.valuesNumber; j++) {
           final VF vf = VF.read(valueStream);
           values.add(vf.value);
         }
-
         handler.loadKeyValues(i, key, values);
       }
     } catch (IOException e) {

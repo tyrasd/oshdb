@@ -35,4 +35,9 @@ public class LoaderHandler implements LoaderKeyTables.Handler, LoaderNode.Handle
   public void loadRole(int id, String role) {
   }
 
+	@Override
+	public void loadKeyValuesInit(int numberKeysToLoad) {
+		// TODO Auto-generated method stub		
+	}
+
 }
