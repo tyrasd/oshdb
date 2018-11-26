@@ -182,7 +182,7 @@ public abstract class OSHDBHandler implements Handler {
 	    while(itr.hasNext()){
 	        final TransformOSHWay way = itr.next();
 	    	final ByteBuffer record = buildOSHWayRecord(way, nodeIdOshMap, baseId, baseTimestamp, baseLongitude, baseLatitude);
-	    	offsets[size] = offset;
+	    	offsets[size++] = offset;
 	    	out.write(record.array(),0,record.limit());
 	    	offset += record.limit();
 	    	
@@ -248,7 +248,7 @@ public abstract class OSHDBHandler implements Handler {
 			}
 		    		    
 			ByteBuffer record = buildOSHRelationRecord(relation, nodeIdOshMap, wayIdOshMap, baseId, baseTimestamp, baseLongitude, baseLatitude);
-	    	offsets[size] = offset;
+	    	offsets[size++] = offset;
 	    	out.write(record.array(),0,record.limit());
 	    	offset += record.limit();
 	    	
