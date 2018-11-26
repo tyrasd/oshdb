@@ -5,6 +5,7 @@ import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.heigit.bigspatialdata.oshdb.osm.OSMNode;
@@ -19,11 +20,16 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
+import com.google.common.collect.Streams;
 
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
+import it.unimi.dsi.fastutil.longs.LongAVLTreeSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.longs.LongSortedSet;
 
 public class Load {
 
@@ -63,7 +69,7 @@ public class Load {
 
 		@Override
 		public boolean loadNodeCondition(Grid grid) {
-			if ((grid.countNodes() > 1000 && grid.sizeNodes() >= 1L * MB) || grid.sizeNodes() >= 4L * MB) {
+			if ((grid.countNodes() > 1000 && grid.sizeNodes() >= 2L * MB) || grid.sizeNodes() >= 4L * MB) {
 				return true;
 			}
 			return false;
@@ -72,7 +78,7 @@ public class Load {
 		@Override
 		public boolean loadWayCondition(Grid grid) {
 			long size = grid.sizeNodes() + grid.sizeRefNodes() + grid.sizeWays();
-			if ((grid.countWays() > 100 && size >= 1L * MB) || size >= 4L * MB) {
+			if ((grid.countWays() > 1000 && size >= 2L * MB) || (grid.countWays() >= 10 && size >= 4L * MB)) {
 				return true;
 			}
 			return false;
@@ -81,7 +87,7 @@ public class Load {
 		@Override
 		public boolean loadRelCondition(Grid grid) {
 			long size = grid.size();
-			if ((grid.countRelations() > 100 && size >= 1L * MB) || size >= 4L * MB) {
+			if ((grid.countRelations() > 1000 && size >= 2L * MB) || (grid.countRelations() >=10 && size >= 4L * MB)) {
 				return true;
 			}
 			return false;
@@ -94,7 +100,6 @@ public class Load {
 					return true;
 			}
 			return false;
-
 		}
 
 		private FastByteArrayOutputStream writeToOut(Object grid) throws IOException {
@@ -117,14 +122,6 @@ public class Load {
 					ZGrid.getIdWithoutZoom(zId), seq, hRBC(bytes), hRBC(totalNodeBytes), hRBC(totalBytes));
 		}
 
-		// @Override
-		// public void handleNodeGrid(GridOSHNodes grid, int seq) throws
-		// IOException {
-		// FastByteArrayOutputStream out = writeToOut(grid);
-		// System.out.println("insert node
-		// "+grid.getLevel()+":"+grid.getId()+"("+seq+") ->"+out.length + "
-		// total:"+totalBytes );
-		// }
 
 		@Override
 		public void handleWayGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
@@ -132,18 +129,13 @@ public class Load {
 			totalWayBytes += bytes;
 			totalBytes += bytes;
 
-			System.out.printf("w %2d:%8d (%3d) -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId),
-					ZGrid.getIdWithoutZoom(zId), seq, hRBC(bytes), hRBC(totalWayBytes), hRBC(totalBytes));
+			System.out.printf("w %2d:%8d (%3d) -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId), ZGrid.getIdWithoutZoom(zId), seq, hRBC(bytes), hRBC(totalWayBytes), hRBC(totalBytes));
+			if(missingNodes.size() > 0){
+				System.out.printf("missing nodes() ->[%s,...]%n",missingNodes.size(),Iterators.toString(Streams.stream(missingNodes.iterator()).limit(10).iterator()));
+				missingNodes.clear();
+			}
 
 		}
-		// @Override
-		// public void handleWayGrid(GridOSHWays grid,int seq) throws
-		// IOException {
-		// FastByteArrayOutputStream out = writeToOut(grid);
-		// System.out.println("insert way
-		// "+grid.getLevel()+":"+grid.getId()+"("+seq+") ->"+out.length + "
-		// total:"+totalBytes );
-		// }
 
 		@Override
 		public void handleRelationGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
@@ -151,33 +143,34 @@ public class Load {
 			totalRelBytes += bytes;
 			totalBytes += bytes;
 
-			System.out.printf("n %2d:%8d (%3d) -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId),
-					ZGrid.getIdWithoutZoom(zId), seq, hRBC(bytes), hRBC(totalRelBytes), hRBC(totalBytes));
+			System.out.printf("r %2d:%8d (%3d) -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId), ZGrid.getIdWithoutZoom(zId), seq, hRBC(bytes), hRBC(totalRelBytes), hRBC(totalBytes));
+			if(missingNodes.size() > 0){
+				System.out.printf("missing nodes() ->[%s,...]%n",missingNodes.size(),Iterators.toString(Streams.stream(missingNodes.iterator()).limit(10).iterator()));
+				missingNodes.clear();
+			}
+			if(missingWays.size() > 0){
+				System.out.printf("missing ways() ->[%s,...]%n",missingWays.size(),Iterators.toString(Streams.stream(missingWays.iterator()).limit(10).iterator()));
+				missingWays.clear();
+			}
 
 		}
 
-		// @Override
-		// public void handleRelationsGrid(GridOSHRelations grid, int seq)
-		// throws IOException {
-		// FastByteArrayOutputStream out = writeToOut(grid);
-		// System.out.println("insert relation
-		// "+grid.getLevel()+":"+grid.getId()+"("+seq+") ->"+out.length + "
-		// total:"+totalBytes );
-		// }
-
+		
+		LongSortedSet missingNodes = new LongAVLTreeSet();
 		@Override
 		public void missingNode(long id) {
 			if (invalidNodes.contains(id))
 				return;
-			System.out.println("missinNode " + id);
+			missingNodes.add(id);
 			return;
 		}
-
+		
+		LongSortedSet missingWays = new LongAVLTreeSet();
 		@Override
 		public void missingWay(long id) {
 			if (invalidWays.contains(id))
 				return;
-			System.out.println("missingWay " + id);
+			missingWays.add(id);
 			return;
 		}
 	}
@@ -209,7 +202,6 @@ public class Load {
 		while (reader.peek().cellId < 0) {
 			CellData cell = reader.next();
 			invalid.add(cell.id);
-
 		}
 		return invalid;
 	}

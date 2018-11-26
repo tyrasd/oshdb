@@ -134,8 +134,12 @@ public class LoaderGrid {
 
 	public void run() throws IOException {
 		while (entityReader.hasNext()) {
-			final long cellId = entityReader.peek().cellId;
+			long cellId = entityReader.peek().cellId;
 			final int zoom = ZGrid.getZoom(cellId);
+			if(zoom == 0 && ZGrid.getIdWithoutZoom(cellId) != 0){
+				System.out.printf("zoom=%d, id:%d, cellId:%d%n",zoom,ZGrid.getIdWithoutZoom(cellId), cellId);
+				cellId = 0;
+			}
 			final OSHDBBoundingBox bbox = ZGrid.getBoundingBox(cellId);
 
 			while (bitmapReader.hasNext()
@@ -146,7 +150,7 @@ public class LoaderGrid {
 				grid.cellId = cellBitmaps.cellId;
 				grid.refNodes = cellBitmaps.nodes;
 				grid.refWays = cellBitmaps.ways;
-				while (bitmapReader.hasNext() && bitmapReader.peek().cellId == cellBitmaps.cellId) {
+				while (bitmapReader.hasNext() && ZGrid.ORDER_DFS_TOP_DOWN.compare(bitmapReader.peek().cellId,cellBitmaps.cellId) == 0) {
 					// merge bitmaps
 					cellBitmaps = bitmapReader.next();
 					grid.refNodes.or(cellBitmaps.nodes);
@@ -163,7 +167,7 @@ public class LoaderGrid {
 			int cWays = 0;
 			int cRels = 0;
 			final boolean[] isParentInit = new boolean[16];
-			while (entityReader.hasNext() && entityReader.peek().cellId == cellId) {
+			while (entityReader.hasNext() && ZGrid.ORDER_DFS_BOTTOM_UP.compare(entityReader.peek().cellId ,cellId) == 0) {
 				final CellData cellData = entityReader.next();
 				final byte[] data = cellData.bytes;
 				switch (cellData.type) {
@@ -244,8 +248,6 @@ public class LoaderGrid {
 
 			load(zoom);
 		}
-
-		load(0);
 	}
 
 	private void moveUpRelation(Grid grid, Grid parent) throws IOException {

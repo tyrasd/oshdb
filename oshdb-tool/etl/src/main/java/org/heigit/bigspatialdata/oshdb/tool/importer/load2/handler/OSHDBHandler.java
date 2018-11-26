@@ -35,18 +35,12 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 public abstract class OSHDBHandler implements Handler {
 	
-	private static final long MAX_GRID_SIZE = 1L*1024L+1024L*1024L; 
+	private static final long MAX_GRID_SIZE = 1L*1024L*1024L*1024L; 
 
 	public abstract void handleNodeGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException;
 	public abstract void handleWayGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException;
 	public abstract void handleRelationGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException;
 	
-//	
-//	public abstract void handleNodeGrid(GridOSHNodes grid, int seq) throws IOException;
-//
-//	public abstract void handleWayGrid(GridOSHWays grid, int seq) throws IOException;
-//
-//	public abstract void handleRelationsGrid(GridOSHRelations grid, int seq) throws IOException;
 	
 	private ByteBuffer buildOSHNodeRecord(TransformOSHNode node, long baseId, long baseTimestamp, long baseLongitude, long baseLatitude) throws IOException{
 		return OSHNode.buildRecord(node.getId(),node, baseId, baseTimestamp, baseLongitude, baseLatitude);
