@@ -118,8 +118,8 @@ public class Load {
 			totalNodeBytes += bytes;
 			totalBytes += bytes;
 
-			System.out.printf("n %2d:%8d (%3d) -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId),
-					ZGrid.getIdWithoutZoom(zId), seq, hRBC(bytes), hRBC(totalNodeBytes), hRBC(totalBytes));
+			System.out.printf("n %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId),
+					ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalNodeBytes), hRBC(totalBytes));
 		}
 
 
@@ -129,7 +129,7 @@ public class Load {
 			totalWayBytes += bytes;
 			totalBytes += bytes;
 
-			System.out.printf("w %2d:%8d (%3d) -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId), ZGrid.getIdWithoutZoom(zId), seq, hRBC(bytes), hRBC(totalWayBytes), hRBC(totalBytes));
+			System.out.printf("w %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId), ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalWayBytes), hRBC(totalBytes));
 			if(missingNodes.size() > 0){
 				System.out.printf("missing nodes() ->[%s,...]%n",missingNodes.size(),Iterators.toString(Streams.stream(missingNodes.iterator()).limit(10).iterator()));
 				missingNodes.clear();
@@ -143,7 +143,7 @@ public class Load {
 			totalRelBytes += bytes;
 			totalBytes += bytes;
 
-			System.out.printf("r %2d:%8d (%3d) -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId), ZGrid.getIdWithoutZoom(zId), seq, hRBC(bytes), hRBC(totalRelBytes), hRBC(totalBytes));
+			System.out.printf("r %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId), ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalRelBytes), hRBC(totalBytes));
 			if(missingNodes.size() > 0){
 				System.out.printf("missing nodes() ->[%s,...]%n",missingNodes.size(),Iterators.toString(Streams.stream(missingNodes.iterator()).limit(10).iterator()));
 				missingNodes.clear();

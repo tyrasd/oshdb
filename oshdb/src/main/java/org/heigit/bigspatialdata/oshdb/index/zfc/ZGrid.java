@@ -222,6 +222,8 @@ public class ZGrid {
     final long aZ = getZoom(a);
     final long bZ = getZoom(b);
     if (aZ == bZ) {
+    	if(aZ == 0)
+    		return 0;
       return Long.compare(a, b);
     }
     final long deltaZ = Math.abs(aZ - bZ);
@@ -251,6 +253,8 @@ public class ZGrid {
     final long aZ = getZoom(a);
     final long bZ = getZoom(b);
     if (aZ == bZ) {
+    	if(aZ == 0)
+    		return 0;
       return Long.compare(a, b);
     }
     final long deltaZ = Math.abs(aZ - bZ);
