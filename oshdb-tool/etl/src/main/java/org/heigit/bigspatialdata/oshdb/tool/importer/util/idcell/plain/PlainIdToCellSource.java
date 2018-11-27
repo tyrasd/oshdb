@@ -125,6 +125,9 @@ public class PlainIdToCellSource implements IdToCellSource {
 		int off = ((int) (id & pageMask)) * 5;
 
 		ByteBuffer[] pages = indexBufferMap.get(idx);
+		if(pages == null){
+			return -1;
+		}
 
 		ByteBuffer page = pages[0].duplicate();
 		if (off > page.limit()) {
@@ -162,6 +165,10 @@ public class PlainIdToCellSource implements IdToCellSource {
 			if (lastIdx != idx) {
 				pages = indexBufferMap.get(idx);
 				lastIdx = idx;
+			}
+			
+			if(pages == null){
+				continue;
 			}
 
 			ByteBuffer page = pages[0].duplicate();
