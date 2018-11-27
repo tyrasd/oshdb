@@ -114,7 +114,7 @@ public class Load {
 
 		@Override
 		public void handleNodeGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
-			long bytes = nodeWriter.write(zId, seq, offsets, size, data);
+			long bytes = 0;// nodeWriter.write(zId, seq, offsets, size, data);
 			totalNodeBytes += bytes;
 			totalBytes += bytes;
 
@@ -125,13 +125,13 @@ public class Load {
 
 		@Override
 		public void handleWayGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
-			long bytes = wayWriter.write(zId, seq, offsets, size, data);
+			long bytes = 0;// wayWriter.write(zId, seq, offsets, size, data);
 			totalWayBytes += bytes;
 			totalBytes += bytes;
 
 			System.out.printf("w %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId), ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalWayBytes), hRBC(totalBytes));
 			if(missingNodes.size() > 0){
-				System.out.printf("missing nodes() ->[%s,...]%n",missingNodes.size(),Iterators.toString(Streams.stream(missingNodes.iterator()).limit(10).iterator()));
+				System.out.printf("missing nodes(%d) ->[%s,...]%n",missingNodes.size(),Iterators.toString(Streams.stream(missingNodes.iterator()).limit(10).iterator()));
 				missingNodes.clear();
 			}
 
@@ -139,17 +139,17 @@ public class Load {
 
 		@Override
 		public void handleRelationGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
-			long bytes = relationWriter.write(zId, seq, offsets, size, data);
+			long bytes = 0;//relationWriter.write(zId, seq, offsets, size, data);
 			totalRelBytes += bytes;
 			totalBytes += bytes;
 
 			System.out.printf("r %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId), ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalRelBytes), hRBC(totalBytes));
 			if(missingNodes.size() > 0){
-				System.out.printf("missing nodes() ->[%s,...]%n",missingNodes.size(),Iterators.toString(Streams.stream(missingNodes.iterator()).limit(10).iterator()));
+				System.out.printf("missing nodes(%d) ->[%s,...]%n",missingNodes.size(),Iterators.toString(Streams.stream(missingNodes.iterator()).limit(10).iterator()));
 				missingNodes.clear();
 			}
 			if(missingWays.size() > 0){
-				System.out.printf("missing ways() ->[%s,...]%n",missingWays.size(),Iterators.toString(Streams.stream(missingWays.iterator()).limit(10).iterator()));
+				System.out.printf("missing ways(%d) ->[%s,...]%n",missingWays.size(),Iterators.toString(Streams.stream(missingWays.iterator()).limit(10).iterator()));
 				missingWays.clear();
 			}
 
