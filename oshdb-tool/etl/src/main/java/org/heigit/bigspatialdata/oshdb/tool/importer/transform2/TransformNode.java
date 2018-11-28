@@ -3,40 +3,26 @@ package org.heigit.bigspatialdata.oshdb.tool.importer.transform2;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.heigit.bigspatialdata.oshdb.osm.OSMNode;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
-import org.heigit.bigspatialdata.oshdb.tool.importer.CellDataMap;
 import org.heigit.bigspatialdata.oshdb.tool.importer.extract.Extract;
 import org.heigit.bigspatialdata.oshdb.tool.importer.extract.data.OsmPbfMeta;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHNode;
-import org.heigit.bigspatialdata.oshdb.tool.importer.transform.TransformerTagRoles;
 import org.heigit.bigspatialdata.oshdb.tool.importer.transform2.Transform.Args;
-import org.heigit.bigspatialdata.oshdb.tool.importer.util.SizeEstimator;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagToIdMapper;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.cellmapping.CellDataSink;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.IdToCellSink;
-import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.rocksdb.RocksDbIdToCellSink;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.util.byteArray.ByteArrayOutputWrapper;
 import org.heigit.bigspatialdata.oshpbf.parser.osm.v0_6.Entity;
 import org.heigit.bigspatialdata.oshpbf.parser.osm.v0_6.Node;
-import org.heigit.bigspatialdata.oshpbf.parser.pbf.BlobReader;
-import org.rocksdb.BlockBasedTableConfig;
-import org.rocksdb.EnvOptions;
-import org.rocksdb.Options;
-import org.rocksdb.RocksDBException;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 public class TransformNode extends Transformer {
 
@@ -63,7 +49,6 @@ public class TransformNode extends Transformer {
 		return OSMType.NODE;
 	}
 
-	final List<Long> testIds = Lists.newArrayList(200542L,200550L);
 	@Override
 	protected long transform(long id, OSMType type, List<Entity> versions) throws IOException {
 		final List<OSMNode> nodes = new ArrayList<>(versions.size());
@@ -72,31 +57,21 @@ public class TransformNode extends Transformer {
 			final Node node = (Node) version;
 			if (version.isVisible()) {
 				final long zId = getCell(node.getLongitude(), node.getLatitude());
-//				if(zId <= 0){
-//					System.out.printf("%10d(%2d), %10d %10d -> z:%2d,%10d(%10d)%n",id,version.getVersion(), node.getLongitude(),node.getLatitude(),ZGrid.getIdWithoutZoom(zId),ZGrid.getIdWithoutZoom(zId),zId);
-//				}
 				if (zId >= 0) {
 					cellIds.add(zId);
-				} else {
-					// System.err.printf("negative zId! %s%n", node);
 				}
 			}
 			nodes.add(getNode(node));
 		}
 
 		final long cellId = (cellIds.size() > 0) ? findBestFittingCellId(cellIds) : -1;
-		
-		if(testIds.stream().anyMatch(it -> it.longValue() == id)){
-			System.out.printf("%10d [%s] -> %d%n",id,Iterables.toString(cellIds),cellId);
-		}
-		
-		final OSHDBBoundingBox bbox = getCellBounce(cellId);
-		final long baseLongitude = bbox.getMinLonLong();
-		final long baseLatitude = bbox.getMinLatLong();
+				
+		//final OSHDBBoundingBox bbox = getCellBounce(cellId);
+		final long baseLongitude = 0;// bbox.getMinLonLong();
+		final long baseLatitude = 0;// bbox.getMinLatLong();
 		final long baseId = 0;
 
-		final TransformOSHNode osh = TransformOSHNode.build(baData, baRecord, baAux, nodes, baseId, 0L, baseLongitude,
-				baseLatitude);
+		final TransformOSHNode osh = TransformOSHNode.build(baData, baRecord, baAux, nodes, baseId, 0L, baseLongitude, baseLatitude);
 		final ByteBuffer record = ByteBuffer.wrap(baRecord.array(), 0, baRecord.length());
 
 		store(cellId, record);

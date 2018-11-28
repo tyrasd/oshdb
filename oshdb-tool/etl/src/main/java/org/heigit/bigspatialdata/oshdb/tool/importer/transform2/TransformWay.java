@@ -2,9 +2,7 @@ package org.heigit.bigspatialdata.oshdb.tool.importer.transform2;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -93,9 +91,10 @@ public class TransformWay extends Transformer {
 		}
 
 		final LongSet cellIds = nodeToCell.get(nodeIds);
-		if(cellIds.contains(0) || cellIds.contains(-1)){
-			System.out.printf("brocken? way %10d -> %s : %s%n",id,Iterables.toString(nodeIds),Iterables.toString(cellIds));
-		}
+//		if(cellIds.contains(0) || cellIds.contains(-1)){
+//			System.out.printf("brocken? way %10d -> %s : %s%n",id,Iterables.toString(nodeIds),Iterables.toString(cellIds));
+//		}
+		
 		final long cellId = findBestFittingCellId(cellIds);
 		final long baseId = 0;
 		final TransformOSHWay osh = TransformOSHWay.build(baData, baRecord, baAux, entities, nodeIds, baseId, 0, 0, 0);

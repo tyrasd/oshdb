@@ -149,7 +149,8 @@ public abstract class Transformer {
 
 		int minZoom = Integer.MAX_VALUE;
 		for (Long cellId : cellIds) {
-			minZoom = Math.min(minZoom, ZGrid.getZoom(cellId));
+			if(cellId >= 0)
+				minZoom = Math.min(minZoom, ZGrid.getZoom(cellId));
 		}
 		final int zoom = minZoom;
 		// bring all to the same zoom level
