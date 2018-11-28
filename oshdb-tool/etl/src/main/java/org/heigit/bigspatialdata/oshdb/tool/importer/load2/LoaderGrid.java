@@ -2,18 +2,12 @@ package org.heigit.bigspatialdata.oshdb.tool.importer.load2;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 import org.heigit.bigspatialdata.oshdb.OSHDB;
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
-import org.heigit.bigspatialdata.oshdb.tool.importer.cli.validator.DirExistValidator;
-import org.heigit.bigspatialdata.oshdb.tool.importer.cli.validator.FileExistValidator;
 import org.heigit.bigspatialdata.oshdb.tool.importer.load2.handler.Handler;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHNode;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHRelation;
@@ -21,15 +15,8 @@ import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHWay;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.validators.PositiveInteger;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
-import com.google.common.collect.Streams;
 
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongSet;
 import okio.Buffer;
 import okio.BufferedSource;
 
@@ -136,8 +123,8 @@ public class LoaderGrid {
 		while (entityReader.hasNext()) {
 			long cellId = entityReader.peek().cellId;
 			final int zoom = ZGrid.getZoom(cellId);
-			if(zoom == 0 && ZGrid.getIdWithoutZoom(cellId) != 0){
-				System.out.printf("zoom=%d, id:%d, cellId:%d%n",zoom,ZGrid.getIdWithoutZoom(cellId), cellId);
+			if (zoom == 0 && ZGrid.getIdWithoutZoom(cellId) != 0) {
+				System.out.printf("zoom=%d, id:%d, cellId:%d%n", zoom, ZGrid.getIdWithoutZoom(cellId), cellId);
 				cellId = 0;
 			}
 			final OSHDBBoundingBox bbox = ZGrid.getBoundingBox(cellId);
@@ -150,7 +137,8 @@ public class LoaderGrid {
 				grid.cellId = cellBitmaps.cellId;
 				grid.refNodes = cellBitmaps.nodes;
 				grid.refWays = cellBitmaps.ways;
-				while (bitmapReader.hasNext() && ZGrid.ORDER_DFS_TOP_DOWN.compare(bitmapReader.peek().cellId,cellBitmaps.cellId) == 0) {
+				while (bitmapReader.hasNext()
+						&& ZGrid.ORDER_DFS_TOP_DOWN.compare(bitmapReader.peek().cellId, cellBitmaps.cellId) == 0) {
 					// merge bitmaps
 					cellBitmaps = bitmapReader.next();
 					grid.refNodes.or(cellBitmaps.nodes);
@@ -159,15 +147,15 @@ public class LoaderGrid {
 			}
 
 			final Buffer nodes = new Buffer();
-			nodes.writeLong(cellId);
 			final Buffer ways = new Buffer();
 			final Buffer rels = new Buffer();
 
 			int cNodes = 0;
 			int cWays = 0;
 			int cRels = 0;
-			final boolean[] isParentInit = new boolean[16];
-			while (entityReader.hasNext() && ZGrid.ORDER_DFS_BOTTOM_UP.compare(entityReader.peek().cellId ,cellId) == 0) {
+
+			while (entityReader.hasNext()
+					&& ZGrid.ORDER_DFS_BOTTOM_UP.compare(entityReader.peek().cellId, cellId) == 0) {
 				final CellData cellData = entityReader.next();
 				final byte[] data = cellData.bytes;
 				switch (cellData.type) {
@@ -183,13 +171,6 @@ public class LoaderGrid {
 						for (int z = zoom; z >= 0; z--) {
 							final Grid parent = entityGrid[z];
 							if (parent.refNodes.contains(osh.getId())) {
-								if (!isParentInit[z]) {
-									if (parent.cRefNodes > 0) {
-										parent.refNodesBuffer.writeInt(0);
-									}
-									parent.refNodesBuffer.writeLong(cellId);
-									isParentInit[z] = true;
-								}
 								parent.refNodesBuffer.writeInt(data.length);
 								parent.refNodesBuffer.write(data);
 								parent.cRefNodes++;
@@ -222,7 +203,6 @@ public class LoaderGrid {
 				if (grid.nodes.size() == 0) {
 					grid.nodes = nodes;
 				} else {
-					grid.nodes.writeInt(0);
 					grid.nodes.writeAll(nodes);
 				}
 				grid.cNodes += cNodes;
@@ -245,7 +225,6 @@ public class LoaderGrid {
 				}
 				grid.cRels += cRels;
 			}
-
 			load(zoom);
 		}
 	}
@@ -304,10 +283,10 @@ public class LoaderGrid {
 		}
 	}
 
-	private void moveUpNode(Grid grid, Grid parent) throws IOException{
-		if(grid.cNodes == 0)
+	private void moveUpNode(Grid grid, Grid parent) throws IOException {
+		if (grid.cNodes == 0)
 			return;
-		
+
 		if (parent.cNodes > 0)
 			parent.nodes.writeInt(0);
 		parent.nodes.writeAll(grid.nodes);
@@ -335,12 +314,12 @@ public class LoaderGrid {
 				if (!loadWay) {
 					moveUpWay(grid, parent);
 
-					if (!loadNode ) {
-						 moveUpNode(grid,parent);
+					if (!loadNode) {
+						moveUpNode(grid, parent);
 					}
 				}
 			}
-	
+
 			final List<TransformOSHRelation> oshRelations;
 			if (loadRelation) {
 				oshRelations = new ArrayList<>(grid.cRels);
@@ -425,7 +404,6 @@ public class LoaderGrid {
 					while (!buffer.exhausted()) {
 						final long lCellId = buffer.readLong();
 						final OSHDBBoundingBox lBBox = ZGrid.getBoundingBox(lCellId);
-						final boolean[] isParentInit = new boolean[16];
 
 						while (!buffer.exhausted()) {
 							final int length = buffer.readInt();
@@ -438,20 +416,14 @@ public class LoaderGrid {
 								System.out.printf("z:%2d, %s, cellId:%d, length:%d%n", z, grid, grid.cellId, length);
 								throw eof;
 							}
-							final TransformOSHNode osh = TransformOSHNode.instance(data, 0, length, 0, 0, lBBox.getMinLonLong(), lBBox.getMinLatLong());
+							final TransformOSHNode osh = TransformOSHNode.instance(data, 0, length, 0, 0,
+									lBBox.getMinLonLong(), lBBox.getMinLatLong());
 							oshNodes.add(osh);
 
 							if (z > 0 && loadNode) {
 								for (int z2 = z - 1; z2 >= 0; z2--) {
 									final Grid parent = entityGrid[z2];
 									if (parent.refNodes.contains(osh.getId())) {
-										if (!isParentInit[z2]) {
-											if (parent.cRefNodes > 0) {
-												parent.refNodesBuffer.writeInt(0);
-											}
-											parent.refNodesBuffer.writeLong(lCellId);
-											isParentInit[z2] = true;
-										}
 										parent.refNodesBuffer.writeInt(length);
 										parent.refNodesBuffer.write(data);
 										parent.cRefNodes++;
@@ -476,35 +448,19 @@ public class LoaderGrid {
 				if (loadWay || loadRelation) {
 					try (final Buffer buffer = grid.refNodesBuffer) {
 						while (!buffer.exhausted()) {
-							final long lCellId = buffer.readLong();
-							final OSHDBBoundingBox lBBox = ZGrid.getBoundingBox(lCellId);
-							final boolean[] isParentInit = new boolean[16];
-
-							while (!buffer.exhausted()) {
-								final int length = buffer.readInt();
-								if (length == 0)
-									break;
-								final byte[] data = new byte[length];
-								buffer.readFully(data);
-								final TransformOSHNode osh = TransformOSHNode.instance(data, 0, length, 0, 0, lBBox.getMinLonLong(), lBBox.getMinLatLong());
-								oshNodes.add(osh);
-
-								if (z > 0) {
-									for (int z2 = z - 1; z2 >= 0; z2--) {
-										final Grid parent = entityGrid[z2];
-										if (parent.refNodes.contains(osh.getId())) {
-											if (!isParentInit[z2]) {
-												if (parent.cRefNodes > 0) {
-													parent.refNodesBuffer.writeInt(0);
-												}
-												parent.refNodesBuffer.writeLong(lCellId);
-												isParentInit[z2] = true;
-											}
-											parent.refNodesBuffer.writeInt(length);
-											parent.refNodesBuffer.write(data);
-											parent.cRefNodes++;
-											break;
-										}
+							final int length = buffer.readInt();
+							final byte[] data = new byte[length];
+							buffer.readFully(data);
+							final TransformOSHNode osh = TransformOSHNode.instance(data, 0, length, 0, 0, 0, 0);
+							oshNodes.add(osh);
+							if (z > 0) {
+								for (int z2 = z - 1; z2 >= 0; z2--) {
+									final Grid parent = entityGrid[z2];
+									if (parent.refNodes.contains(osh.getId())) {
+										parent.refNodesBuffer.writeInt(length);
+										parent.refNodesBuffer.write(data);
+										parent.cRefNodes++;
+										break;
 									}
 								}
 							}
