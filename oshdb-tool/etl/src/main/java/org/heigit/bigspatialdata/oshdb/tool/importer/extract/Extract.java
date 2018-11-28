@@ -41,19 +41,32 @@ import org.heigit.bigspatialdata.oshpbf.parser.osm.v0_6.Relation;
 import org.heigit.bigspatialdata.oshpbf.parser.osm.v0_6.RelationMember;
 import org.heigit.bigspatialdata.oshpbf.parser.osm.v0_6.Tag;
 import org.heigit.bigspatialdata.oshpbf.parser.osm.v0_6.TagText;
+import org.heigit.bigspatialdata.oshpbf.parser.pbf.BlobReader;
+import org.heigit.bigspatialdata.oshpbf.parser.pbf.BlobToOSHIterator;
+import org.heigit.bigspatialdata.oshpbf.parser.pbf.PbfBlob;
 import org.heigit.bigspatialdata.oshpbf.parser.rx.Osh;
 import org.heigit.bigspatialdata.oshpbf.parser.rx.RxOshPbfReader;
+import org.heigit.bigspatialdata.oshpbf.parser.util.MyLambdaSubscriber;
+import org.reactivestreams.Publisher;
 import org.wololo.geojson.GeoJSON;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import com.google.common.base.Functions;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.google.common.io.CountingOutputStream;
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import crosby.binary.Osmformat;
+import crosby.binary.Osmformat.HeaderBlock;
 import io.reactivex.Flowable;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
+import io.reactivex.internal.functions.ObjectHelper;
+import io.reactivex.internal.operators.flowable.FlowableBlockingSubscribe;
+import io.reactivex.schedulers.Schedulers;
 
 public class Extract {
 
@@ -150,7 +163,13 @@ public class Extract {
     final long start = workSize * workerId;
     final long softEnd = Math.min(start + workSize, fileLength);
 
-    Flowable<Osh> oshFlow = RxOshPbfReader.readOsh(pbf, start, softEnd, -1, workerId != 0, stats::addHeader);
+    //Flowable<Osh> oshFlow = RxOshPbfReader.readOsh(pbf, start, softEnd, -1, workerId != 0, stats::addHeader);
+    
+    Flowable<PbfBlob> blobFlow  = read(pbf, start, softEnd, workSize, workerId,stats::addHeader);
+    Flowable<BlobToOSHIterator> blockFlow = decompress(blobFlow);
+	Flowable<List<Osh>> oshListFlow = extract(blockFlow);
+	Flowable<Osh> oshFlow = oshListFlow.flatMap(Flowable::fromIterable);
+    
     
     oshFlow = oshFlow.doOnNext(osh -> {
       stats.add(osh);
@@ -380,10 +399,68 @@ public class Extract {
         throw new RuntimeException(e);
       }
     }
-    
-    
-    
   }
+  
+	private Flowable<List<Osh>> extract(Flowable<BlobToOSHIterator> blockFlow) {
+		Flowable<List<Osh>> oshFlow = blockFlow.observeOn(Schedulers.computation(), false, 1).map(block -> {
+			List<Osh> oshs = Lists.newArrayList();
+			Stopwatch stopwatch = Stopwatch.createStarted();
+			while (block.hasNext()) {
+				oshs.add(block.next());
+			}
+			// System.out.println(block.getBlob().blobId + "=generate
+			// versions:"+ oshs.size() + "(" + stopwatch + "): " +
+			// Thread.currentThread().getName());
+			return oshs;
+		});
+		return oshFlow;
+	}
+
+	private Flowable<BlobToOSHIterator> decompress(Flowable<PbfBlob> blobFlow) {
+		Flowable<BlobToOSHIterator> blockFlow = blobFlow.observeOn(Schedulers.computation(), false, 1).map(blob -> {
+			// Stopwatch stopwatch = Stopwatch.createStarted();
+			final Osmformat.PrimitiveBlock block = blob.getPrimitivBlock();
+			// System.out.println(blob.getBlobId() + "=decompress(" + stopwatch
+			// + "): " + Thread.currentThread().getName());
+			return new BlobToOSHIterator(blob, block);
+		});
+		return blockFlow;
+	}
+
+	private Flowable<PbfBlob> read(Path pbf, long start, long softEnd, long hardEnd, int workerId,Consumer<HeaderBlock> header) throws IOException {
+		final BlobReader blobReader = BlobReader.newInstance(pbf, start, softEnd, hardEnd, workerId != 0);
+		Flowable<PbfBlob> blobFlow = Flowable.generate((emitter) -> {
+			if (blobReader.hasNext()) {
+				PbfBlob blob = blobReader.next();
+				emitter.onNext(blob);
+				// System.out.println(blob.getBlobId() + "=generater.onNext: " +
+				// Thread.currentThread().getName());
+				return;
+			} else {
+				if (blobReader.wasException()) {
+					emitter.onError(blobReader.getException());
+				} else {
+					emitter.onComplete();
+				}
+			}
+		});
+		blobFlow = blobFlow.subscribeOn(Schedulers.io());
+		blobFlow = blobFlow.doOnNext(blob -> {
+	        if(blob.isHeader())
+	          header.accept(blob.getHeaderBlock());
+	      });
+		blobFlow = blobFlow.filter(PbfBlob::isData);
+		return blobFlow;
+	}
+
+	public static <T> void subscribe(Publisher<? extends T> o, final Consumer<? super T> onNext,
+			final Consumer<? super Throwable> onError, final Action onComplete, long requestValue) {
+		ObjectHelper.requireNonNull(onNext, "onNext is null");
+		ObjectHelper.requireNonNull(onError, "onError is null");
+		ObjectHelper.requireNonNull(onComplete, "onComplete is null");
+		FlowableBlockingSubscribe.subscribe(o, new MyLambdaSubscriber<T>(onNext, onError, onComplete, requestValue));
+	}
+  
 
   public static void main(String[] args) throws IOException {
     ExtractArgs config = new ExtractArgs();
