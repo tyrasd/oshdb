@@ -170,8 +170,7 @@ public class TransformMain {
 					}
 					 
 				 };
-					CellRefSink cellRefSink = new CellRefMap(workDir, String.format("transform_ref_relation_%02d", workerId),
-							refMemory)) {
+					CellRefSink cellRefSink = new CellRefMap(workDir, String.format("transform_ref_relation_%02d", workerId), refMemory)) {
 				try (OutputStream id2Cell = Files.asByteSink(id2CellPath.toFile()).openBufferedStream();
 						OutputStream id2CellIdx = Files.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile())
 								.openBufferedStream();

@@ -13,7 +13,6 @@ import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHNode;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHRelation;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHWay;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
-import org.heigit.bigspatialdata.oshdb.v0_6.OSHDBMember;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import com.google.common.collect.PeekingIterator;

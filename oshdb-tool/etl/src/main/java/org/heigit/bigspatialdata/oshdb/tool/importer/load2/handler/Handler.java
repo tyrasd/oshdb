@@ -23,4 +23,7 @@ public interface Handler {
 	boolean loadNodeCondition(Grid grid)throws IOException ;
 
 	boolean filterNode(TransformOSHNode osh);
+	
+	boolean filterWay(TransformOSHWay osh);
+	boolean filterRelation(TransformOSHRelation osh);
 }
