@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -14,6 +15,8 @@ import org.heigit.bigspatialdata.oshdb.tool.importer.cli.validator.DirExistValid
 import org.heigit.bigspatialdata.oshdb.tool.importer.load2.LoaderGrid.Grid;
 import org.heigit.bigspatialdata.oshdb.tool.importer.load2.handler.OSHDBHandler;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHNode;
+import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHRelation;
+import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHWay;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import com.beust.jcommander.JCommander;
@@ -93,15 +96,6 @@ public class Load {
 			return false;
 		}
 
-		@Override
-		public boolean filterNode(TransformOSHNode osh) {
-			for (OSMNode osm : osh) {
-				if (osm.getRawTags().length > 0)
-					return true;
-			}
-			return false;
-		}
-
 		private FastByteArrayOutputStream writeToOut(Object grid) throws IOException {
 			out.reset();
 			try (ObjectOutputStream oos = new ObjectOutputStream(out)) {
@@ -112,6 +106,16 @@ public class Load {
 			return out;
 		}
 
+		
+		@Override
+		public void handleNodeGrid(long zId, List<TransformOSHNode> nodes) throws IOException {
+			String check = nodes.stream().limit(2).map(osh -> {
+				return osh.stream().limit(2).map(osm -> String.format("%d[%d,%s] %.7f,%.7f", osm.getId(),osm.getVersion(),osm.isVisible(),osm.getLatitude(),osm.getLongitude())).collect(Collectors.joining("/","(",")"));
+			}).collect(Collectors.joining("|"));
+			System.out.println("check-> "+check);
+			super.handleNodeGrid(zId, nodes);
+		}
+		
 		@Override
 		public void handleNodeGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
 			long bytes = 0;// nodeWriter.write(zId, seq, offsets, size, data);
@@ -122,6 +126,15 @@ public class Load {
 					ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalNodeBytes), hRBC(totalBytes));
 		}
 
+		@Override
+		public void handleWayGrid(long zId, List<TransformOSHWay> ways, List<TransformOSHNode> nodes)
+				throws IOException {
+			String check = nodes.stream().limit(2).map(osh -> {
+				return osh.stream().limit(2).map(osm -> String.format("%d[%d,%s] %.7f,%.7f", osm.getId(),osm.getVersion(),osm.isVisible(),osm.getLatitude(),osm.getLongitude())).collect(Collectors.joining("/","(",")"));
+			}).collect(Collectors.joining("|"));
+			System.out.println("check-> "+check);
+			super.handleWayGrid(zId, ways, nodes);
+		}
 
 		@Override
 		public void handleWayGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
@@ -173,6 +186,25 @@ public class Load {
 			missingWays.add(id);
 			return;
 		}
+		
+		@Override
+		public boolean filterNode(TransformOSHNode osh) {
+			for (OSMNode osm : osh) {
+				if (osm.getRawTags().length > 0)
+					return true;
+			}
+			return false;
+		}
+		
+		@Override
+		public boolean filterWay(TransformOSHWay osh) {
+			return true;
+		}
+		
+		@Override
+		public boolean filterRelation(TransformOSHRelation osh) {
+			return true;
+		}
 	}
 
 	public static class Args {
@@ -196,10 +228,21 @@ public class Load {
 			return c;
 		}));
 	}
+	
+	private static PeekingIterator<CellBitmaps> merge(Path workDir, String glob) throws IOException {
+		List<ReaderBitmap> readers = Lists.newArrayList();
+		for (Path path : Files.newDirectoryStream(workDir, glob)) {
+			readers.add(new ReaderBitmap(path));
+		}
+		return Iterators.peekingIterator(Iterators.mergeSorted(readers, (a, b) -> {
+			int c = ZGrid.ORDER_DFS_TOP_DOWN.compare(a.cellId, b.cellId);
+			return c;
+		}));
+	}
 
 	private static Roaring64NavigableMap skipInvalid(PeekingIterator<CellData> reader) {
 		Roaring64NavigableMap invalid = new Roaring64NavigableMap();
-		while (reader.peek().cellId < 0) {
+		while (reader.hasNext() && reader.peek().cellId < 0) {
 			CellData cell = reader.next();
 			invalid.add(cell.id);
 		}
@@ -222,22 +265,23 @@ public class Load {
 
 		final Path workDir = config.workDir;
 
-		List<ReaderBitmap> readerBitmaps = Lists.newArrayList();
-		for (Path path : Files.newDirectoryStream(workDir, "transform_ref_*")) {
-			readerBitmaps.add(new ReaderBitmap(path));
-		}
+		
+		PeekingIterator<CellBitmaps> bitmapWayRefReader = merge(workDir, "transform_ref_way_*");
+		PeekingIterator<CellBitmaps> bitmapRelRefReader = Iterators.peekingIterator(Collections.emptyIterator()); //  merge(workDir, "transfrom_ref_relation_*");
+		
 		PeekingIterator<CellBitmaps> bitmapReader = Iterators
-				.peekingIterator(Iterators.mergeSorted(readerBitmaps, (a, b) -> {
+				.peekingIterator(Iterators.mergeSorted(Lists.newArrayList(bitmapWayRefReader, bitmapRelRefReader), (a, b) -> {
 					int c = ZGrid.ORDER_DFS_TOP_DOWN.compare(a.cellId, b.cellId);
 					return c;
 				}));
+		
 		while (bitmapReader.hasNext() && bitmapReader.peek().cellId == -1) {
 			bitmapReader.next();
 		}
 
 		PeekingIterator<CellData> nodeReader = merge(workDir, OSMType.NODE, "transform_node_*");
 		PeekingIterator<CellData> wayReader = merge(workDir, OSMType.WAY, "transform_way_*");
-		PeekingIterator<CellData> relReader = merge(workDir, OSMType.RELATION, "transform_relation_*");
+		PeekingIterator<CellData> relReader = Iterators.peekingIterator(Collections.emptyIterator()); //  merge(workDir, OSMType.RELATION, "transform_relation_*");
 
 		Stopwatch stopwatch = Stopwatch.createUnstarted();
 		stopwatch.reset().start();
@@ -254,7 +298,7 @@ public class Load {
 				.peekingIterator(Iterators.mergeSorted(Lists.newArrayList(nodeReader, wayReader, relReader), (a, b) -> {
 					int c = ZGrid.ORDER_DFS_BOTTOM_UP.compare(a.cellId, b.cellId);
 					if (c == 0) {
-						c = a.type.compareTo(b.type);
+						c = a.type.compareTo(b.type) * -1;
 						if (c == 0) {
 							c = Long.compare(a.id, b.id);
 						}
