@@ -31,6 +31,7 @@ import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 public abstract class OSHDBHandler implements Handler {
@@ -51,16 +52,23 @@ public abstract class OSHDBHandler implements Handler {
 	}
 	
 	private final ObjectArrayList<OSHNode> wayNodes = new ObjectArrayList<>();
+	
 	private ByteBuffer buildOSHWayRecord(TransformOSHWay way, Map<Long,OSHNode> nodes, long baseId, long baseTimestamp, long baseLongitude, long baseLatitude) throws IOException{
 		wayNodes.ensureCapacity(way.getNodeIds().length);
+	
+	
+		LongArrayList missing = new LongArrayList();
 		for (long id : way.getNodeIds()) {
 			OSHNode node = nodes.get(id);
 			if (node == null) {
 				missingNode(id);
+				missing.add(id);
 				continue;
 			}
 			wayNodes.add(node);
 		}
+		if(missing.size() > 0)
+			System.out.println("missing nodes: wId:"+way.getId()+" "+missing.size()+" nId:"+missing.getLong(0));
 		
 		ByteBuffer record = OSHWay.buildRecord(way.getId(), way, wayNodes, baseId, baseTimestamp, baseLongitude, baseLatitude);
 		wayNodes.clear();
