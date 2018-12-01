@@ -17,6 +17,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import com.google.common.collect.PeekingIterator;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;
 import okio.Buffer;
 import okio.BufferedSource;
 
@@ -33,8 +34,8 @@ public class LoaderGrid {
 		int cWays, cRefWays;
 		int cRels, cRefRels;
 
-		Roaring64NavigableMap refNodes = Roaring64NavigableMap.bitmapOf();
-		Roaring64NavigableMap refWays = Roaring64NavigableMap.bitmapOf();
+		Roaring64NavigableMap refNodes;// = Roaring64NavigableMap.bitmapOf();
+		Roaring64NavigableMap refWays;// = Roaring64NavigableMap.bitmapOf();
 
 		Buffer refNodesBuffer = new Buffer();
 		Buffer refWaysBuffer = new Buffer();
@@ -103,16 +104,32 @@ public class LoaderGrid {
 
 	private final PeekingIterator<CellData> entityReader;
 
-	private final PeekingIterator<CellBitmaps> bitmapReader;
+	//private final PeekingIterator<CellBitmaps> bitmapReader;
 	private final Handler handler;
-
+	private final Long2ObjectAVLTreeMap<CellBitmaps> bitmaps = new Long2ObjectAVLTreeMap<>();
 	private Grid[] entityGrid;
 
 	public LoaderGrid(PeekingIterator<CellData> entityReader, PeekingIterator<CellBitmaps> bitmapReader,
 			Handler handler) {
 		this.entityReader = entityReader;
-		this.bitmapReader = bitmapReader;
+		//this.bitmapReader = bitmapReader;
 		this.handler = handler;
+		
+		
+		while (bitmapReader.hasNext()) {
+			final CellBitmaps cellBitmaps = bitmapReader.next();
+			final long cellId = cellBitmaps.cellId;
+			while (bitmapReader.hasNext() && ZGrid.ORDER_DFS_TOP_DOWN.compare(bitmapReader.peek().cellId, cellId) == 0) {
+				// merge bitmaps
+				CellBitmaps merge = bitmapReader.next();
+				cellBitmaps.nodes.or(merge.nodes);
+				cellBitmaps.ways.or(merge.ways);
+			}
+			
+			cellBitmaps.nodes.runOptimize();
+			cellBitmaps.ways.runOptimize();
+			bitmaps.put(cellId, cellBitmaps);
+		}
 
 		entityGrid = new Grid[OSHDB.MAXZOOM + 1];
 	}
@@ -132,20 +149,6 @@ public class LoaderGrid {
 			}
 			final OSHDBBoundingBox bbox = ZGrid.getBoundingBox(cellId);
 
-			while (bitmapReader.hasNext()
-					&& ZGrid.ORDER_DFS_TOP_DOWN.compare(bitmapReader.peek().cellId, cellId) <= 0) {
-				CellBitmaps cellBitmaps = bitmapReader.next();
-				final Grid grid = getGrid(cellBitmaps.cellId);// entityGrid[bitmapZoom];
-				grid.refNodes.or(cellBitmaps.nodes);
-				grid.refWays.or(cellBitmaps.ways);
-				while (bitmapReader.hasNext() && ZGrid.ORDER_DFS_TOP_DOWN.compare(bitmapReader.peek().cellId, cellBitmaps.cellId) == 0) {
-					// merge bitmaps
-					cellBitmaps = bitmapReader.next();
-					grid.refNodes.or(cellBitmaps.nodes);
-					grid.refWays.or(cellBitmaps.ways);
-				}			
-			}
-
 			final Buffer nodes = new Buffer();
 			final Buffer ways = new Buffer();
 			final Buffer rels = new Buffer();
@@ -154,7 +157,7 @@ public class LoaderGrid {
 			int cWays = 0;
 			int cRels = 0;
 
-			final Grid grid = getGrid(cellId); // entityGrid[zoom];
+			final Grid grid = getGrid(cellId);
 
 			while (entityReader.hasNext()
 					&& ZGrid.ORDER_DFS_BOTTOM_UP.compare(entityReader.peek().cellId, cellId) == 0) {
@@ -261,8 +264,7 @@ public class LoaderGrid {
 			if(z == 0){
 				return;
 			}			
-			Grid grid = entityGrid[z];
-			
+			final Grid grid = entityGrid[z];
 			if (grid != null && grid.cellId != cellId) {
 				moveGridUp(grid.cellId);
 			}
@@ -272,7 +274,7 @@ public class LoaderGrid {
 		long parentCellId = ZGrid.getParent(cellId);
 		zoom--;
 		while (true) {
-			Grid grid = entityGrid[zoom];
+			final Grid grid = entityGrid[zoom];
 			if (grid != null) {
 				if (ZGrid.ORDER_DFS_BOTTOM_UP.compare(grid.cellId, parentCellId) < 0) {
 					moveGridUp(grid.cellId);
@@ -296,10 +298,16 @@ public class LoaderGrid {
 		final int zoom = ZGrid.getZoom(cellId);
 		Grid grid = entityGrid[zoom];
 		if (grid == null) {
-			if (!init)
-				return null;
 			grid = new Grid();
 			grid.cellId = cellId;
+			CellBitmaps cellBitmaps = bitmaps.remove(cellId);
+			if(cellBitmaps != null){
+				grid.refNodes = cellBitmaps.nodes;
+				grid.refWays = cellBitmaps.ways;
+			}else{
+				grid.refNodes = new Roaring64NavigableMap();
+				grid.refWays = new Roaring64NavigableMap();
+			}
 			entityGrid[zoom] = grid;
 		}
 		if(!init && grid.cellId != cellId){

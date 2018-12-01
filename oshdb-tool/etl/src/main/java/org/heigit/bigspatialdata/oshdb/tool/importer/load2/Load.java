@@ -60,6 +60,8 @@ public class Load {
 		private long totalWayBytes = 0;
 		private long totalRelBytes = 0;
 		private long totalBytes = 0;
+		
+		private final Stopwatch stopwatch;
 
 		private LoadHandler(GridWriter nodeWriter, GridWriter wayWriter, GridWriter relationWriter,
 				Roaring64NavigableMap invalidNodes, Roaring64NavigableMap invalidWays) {
@@ -68,6 +70,8 @@ public class Load {
 			this.relationWriter = relationWriter;
 			this.invalidNodes = invalidNodes;
 			this.invalidWays = invalidWays;
+			
+			this.stopwatch = Stopwatch.createStarted();
 		}
 
 		@Override
@@ -105,8 +109,7 @@ public class Load {
 			totalBytes += out.length;
 			return out;
 		}
-
-		
+	
 		@Override
 		public void handleNodeGrid(long zId, List<TransformOSHNode> nodes) throws IOException {
 			String check = nodes.stream().limit(2).map(osh -> {
@@ -118,7 +121,7 @@ public class Load {
 		
 		@Override
 		public void handleNodeGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
-			long bytes = 0;// nodeWriter.write(zId, seq, offsets, size, data);
+			long bytes = size*4+data.length;// nodeWriter.write(zId, seq, offsets, size, data);
 			totalNodeBytes += bytes;
 			totalBytes += bytes;
 
@@ -138,13 +141,13 @@ public class Load {
 
 		@Override
 		public void handleWayGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
-			long bytes = 0;// wayWriter.write(zId, seq, offsets, size, data);
+			long bytes = size*4+data.length;// wayWriter.write(zId, seq, offsets, size, data);
 			totalWayBytes += bytes;
 			totalBytes += bytes;
 
 			System.out.printf("w %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId), ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalWayBytes), hRBC(totalBytes));
 			if(missingNodes.size() > 0){
-				System.out.printf("missing nodes(%d) ->[%s,...]%n",missingNodes.size(),Iterators.toString(Streams.stream(missingNodes.iterator()).limit(10).iterator()));
+				System.out.printf("missing nodes(%d) ->[%s,...]  %s%n",missingNodes.size(),Iterators.toString(Streams.stream(missingNodes.iterator()).limit(5).iterator()),stopwatch);
 				missingNodes.clear();
 			}
 
@@ -152,17 +155,17 @@ public class Load {
 
 		@Override
 		public void handleRelationGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
-			long bytes = 0;//relationWriter.write(zId, seq, offsets, size, data);
+			long bytes = size*4+data.length;//relationWriter.write(zId, seq, offsets, size, data);
 			totalRelBytes += bytes;
 			totalBytes += bytes;
 
 			System.out.printf("r %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId), ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalRelBytes), hRBC(totalBytes));
 			if(missingNodes.size() > 0){
-				System.out.printf("missing nodes(%d) ->[%s,...]%n",missingNodes.size(),Iterators.toString(Streams.stream(missingNodes.iterator()).limit(10).iterator()));
+				System.out.printf("missing nodes(%d) ->[%s,...]  %s%n",missingNodes.size(),Iterators.toString(Streams.stream(missingNodes.iterator()).limit(5).iterator()),stopwatch);
 				missingNodes.clear();
 			}
 			if(missingWays.size() > 0){
-				System.out.printf("missing ways(%d) ->[%s,...]%n",missingWays.size(),Iterators.toString(Streams.stream(missingWays.iterator()).limit(10).iterator()));
+				System.out.printf("missing ways(%d) ->[%s,...]   %s%n",missingWays.size(),Iterators.toString(Streams.stream(missingWays.iterator()).limit(10).iterator()),stopwatch);
 				missingWays.clear();
 			}
 
