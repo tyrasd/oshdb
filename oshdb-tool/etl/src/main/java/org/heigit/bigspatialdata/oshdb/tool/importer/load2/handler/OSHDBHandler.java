@@ -35,125 +35,125 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 public abstract class OSHDBHandler implements Handler {
-	
-	private static final long MAX_GRID_SIZE = 1L*1024L*1024L*1024L; 
+
+	private static final long MAX_GRID_SIZE = 1L * 1024L * 1024L * 1024L;
 
 	public abstract void handleNodeGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException;
+
 	public abstract void handleWayGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException;
+
 	public abstract void handleRelationGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException;
-	
-	
-	private ByteBuffer buildOSHNodeRecord(TransformOSHNode node, long baseId, long baseTimestamp, long baseLongitude, long baseLatitude) throws IOException{
-		return OSHNode.buildRecord(node.getId(),node, baseId, baseTimestamp, baseLongitude, baseLatitude);
+
+	private ByteBuffer buildOSHNodeRecord(TransformOSHNode node, long baseId, long baseTimestamp, long baseLongitude,
+			long baseLatitude) throws IOException {
+		return OSHNode.buildRecord(node.getId(), node, baseId, baseTimestamp, baseLongitude, baseLatitude);
 	}
-	private OSHNode buildOSHNode(TransformOSHNode node, long baseId, long baseTimestamp, long baseLongitude, long baseLatitude) throws IOException{		
+
+	private OSHNode buildOSHNode(TransformOSHNode node, long baseId, long baseTimestamp, long baseLongitude,
+			long baseLatitude) throws IOException {
 		ByteBuffer record = buildOSHNodeRecord(node, baseId, baseTimestamp, baseLongitude, baseLatitude);
 		return OSHNode.instance(record.array(), 0, record.limit(), baseId, baseTimestamp, baseLongitude, baseLatitude);
 	}
-	
+
 	private final ObjectArrayList<OSHNode> wayNodes = new ObjectArrayList<>();
-	
-	private ByteBuffer buildOSHWayRecord(TransformOSHWay way, Map<Long,OSHNode> nodes, long baseId, long baseTimestamp, long baseLongitude, long baseLatitude) throws IOException{
-		wayNodes.ensureCapacity(way.getNodeIds().length);
-	
-	
-		LongArrayList missing = new LongArrayList();
-		for (long id : way.getNodeIds()) {
-			OSHNode node = nodes.get(id);
-			if (node == null) {
-				missingNode(id);
-				missing.add(id);
-				continue;
-			}
-			wayNodes.add(node);
-		}
-		if(missing.size() > 0)
-			System.out.println("missing nodes: wId:"+way.getId()+" "+missing.size()+" nId:"+missing.getLong(0));
-		
-		ByteBuffer record = OSHWay.buildRecord(way.getId(), way, wayNodes, baseId, baseTimestamp, baseLongitude, baseLatitude);
-		wayNodes.clear();
+
+	private ByteBuffer buildOSHWayRecord(TransformOSHWay way, List<OSHNode> nodes, long baseId, long baseTimestamp,
+			long baseLongitude, long baseLatitude) throws IOException {
+		ByteBuffer record = OSHWay.buildRecord(way.getId(), way, nodes, baseId, baseTimestamp, baseLongitude,
+				baseLatitude);
 		return record;
 	}
-	
-	private OSHWay buildOSHWay(TransformOSHWay way, Map<Long,OSHNode> nodes, long baseId, long baseTimestamp, long baseLongitude, long baseLatitude) throws IOException{
+
+	private OSHWay buildOSHWay(TransformOSHWay way, List<OSHNode> nodes, long baseId, long baseTimestamp,
+			long baseLongitude, long baseLatitude) throws IOException {
 		ByteBuffer record = buildOSHWayRecord(way, nodes, baseId, baseTimestamp, baseLongitude, baseLatitude);
 		return OSHWay.instance(record.array(), 0, record.limit(), baseId, baseTimestamp, baseLongitude, baseLatitude);
 	}
-	
+
 	public abstract void missingNode(long id);
+
 	public abstract void missingWay(long id);
 
 	private final ObjectArrayList<OSHNode> relationNodes = new ObjectArrayList<>();
 	private final ObjectArrayList<OSHWay> relationWays = new ObjectArrayList<>();
-	private ByteBuffer buildOSHRelationRecord(TransformOSHRelation relation, Map<Long,OSHNode> nodes, Map<Long,OSHWay> ways, long baseId, long baseTimestamp, long baseLongitude, long baseLatitude) throws IOException{
+
+	private ByteBuffer buildOSHRelationRecord(TransformOSHRelation relation, Map<Long, OSHNode> nodes,
+			Map<Long, OSHWay> ways, long baseId, long baseTimestamp, long baseLongitude, long baseLatitude)
+			throws IOException {
 		relationNodes.ensureCapacity(relation.getNodeIds().length);
-		for(long id : relation.getNodeIds()){
+		for (long id : relation.getNodeIds()) {
 			OSHNode node = nodes.get(id);
-			if(node == null){
+			if (node == null) {
 				missingNode(id);
 				continue;
 			}
 			relationNodes.add(node);
 		}
 		relationWays.ensureCapacity(relation.getWayIds().length);
-		for(long id : relation.getWayIds()){
+		for (long id : relation.getWayIds()) {
 			OSHWay way = ways.get(id);
-			if(way == null){
+			if (way == null) {
 				missingWay(id);
 				continue;
 			}
 			relationWays.add(way);
 		}
-		
-		ByteBuffer record = OSHRelation.buildRecord(relation.getId(), relation, relationNodes, relationWays, baseId, baseTimestamp, baseLongitude, baseLatitude);
+
+		ByteBuffer record = OSHRelation.buildRecord(relation.getId(), relation, relationNodes, relationWays, baseId,
+				baseTimestamp, baseLongitude, baseLatitude);
 		relationNodes.clear();
 		relationWays.clear();
 		return record;
 	}
-	
-	private OSHRelation buildOSHRelation(TransformOSHRelation relation, Map<Long,OSHNode> nodes, Map<Long,OSHWay> ways, long baseId, long baseTimestamp, long baseLongitude, long baseLatitude) throws IOException{
-		ByteBuffer record = buildOSHRelationRecord(relation, nodes, ways, baseId, baseTimestamp, baseLongitude, baseLatitude);
-		return OSHRelation.instance(record.array(), 0, record.limit(), baseId, baseTimestamp, baseLongitude, baseLatitude);
+
+	private OSHRelation buildOSHRelation(TransformOSHRelation relation, Map<Long, OSHNode> nodes,
+			Map<Long, OSHWay> ways, long baseId, long baseTimestamp, long baseLongitude, long baseLatitude)
+			throws IOException {
+		ByteBuffer record = buildOSHRelationRecord(relation, nodes, ways, baseId, baseTimestamp, baseLongitude,
+				baseLatitude);
+		return OSHRelation.instance(record.array(), 0, record.limit(), baseId, baseTimestamp, baseLongitude,
+				baseLatitude);
 	}
-	
+
 	@Override
 	public void handleNodeGrid(long zId, List<TransformOSHNode> nodes) throws IOException {
 		if (zId < 0 || nodes.size() == 0)
 			return;
-//		final int zoom = ZGrid.getZoom(zId);
-//		final XYGrid xyGrid = new XYGrid(zoom);
+		// final int zoom = ZGrid.getZoom(zId);
+		// final XYGrid xyGrid = new XYGrid(zoom);
 
 		final long baseId = 0;
 		final long baseTimestamp = 0;
 		final OSHDBBoundingBox bbox = ZGrid.getBoundingBox(zId);
 		final long baseLongitude = bbox.getMinLonLong() + (bbox.getMaxLonLong() - bbox.getMinLonLong()) / 2;
 		final long baseLatitude = bbox.getMinLatLong() + (bbox.getMaxLatLong() - bbox.getMinLatLong()) / 2;
-//		final long xyId = xyGrid.getId(baseLongitude, baseLatitude);
-			
+		// final long xyId = xyGrid.getId(baseLongitude, baseLatitude);
+
 		Collections.sort(nodes);
-		
+
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
-		
+
 		final int[] offsets = new int[nodes.size()];
-		
+
 		final Iterator<TransformOSHNode> itr = nodes.iterator();
-		
+
 		int offset = 0;
 		int size = 0;
 		int seq = 0;
-		while(itr.hasNext()){
+		while (itr.hasNext()) {
 			TransformOSHNode node = itr.next();
-			ByteBuffer record = OSHNode.buildRecord(node.getId(),node, baseId, baseTimestamp, baseLongitude, baseLatitude);
-		    offsets[size++] = offset;
-		    out.write(record.array(), 0, record.limit());
-		    offset += record.limit();
-		    
-		    if(offset >= MAX_GRID_SIZE || !itr.hasNext()){
-		    	final byte[] data = out.toByteArray();
-			    handleNodeGrid(zId, seq++, offsets, size, data);
-			    offset = size =0;
-			    out.reset();
-		    }
+			ByteBuffer record = OSHNode.buildRecord(node.getId(), node, baseId, baseTimestamp, baseLongitude,
+					baseLatitude);
+			offsets[size++] = offset;
+			out.write(record.array(), 0, record.limit());
+			offset += record.limit();
+
+			if (offset >= MAX_GRID_SIZE || !itr.hasNext()) {
+				final byte[] data = out.toByteArray();
+				handleNodeGrid(zId, seq++, offsets, size, data);
+				offset = size = 0;
+				out.reset();
+			}
 		}
 	}
 
@@ -161,111 +161,149 @@ public abstract class OSHDBHandler implements Handler {
 	public void handleWayGrid(long zId, List<TransformOSHWay> ways, List<TransformOSHNode> nodes) throws IOException {
 		if (zId < 0 || ways.size() == 0)
 			return;
-//		final int zoom = ZGrid.getZoom(zId);
-//		final XYGrid xyGrid = new XYGrid(zoom);
+		// final int zoom = ZGrid.getZoom(zId);
+		// final XYGrid xyGrid = new XYGrid(zoom);
 
 		final long baseId = 0;
 		final long baseTimestamp = 0;
 		final OSHDBBoundingBox bbox = ZGrid.getBoundingBox(zId);
 		final long baseLongitude = bbox.getMinLonLong() + (bbox.getMaxLonLong() - bbox.getMinLonLong()) / 2;
 		final long baseLatitude = bbox.getMinLatLong() + (bbox.getMaxLatLong() - bbox.getMinLatLong()) / 2;
-//		final long xyId = xyGrid.getId(baseLongitude, baseLatitude);
+		// final long xyId = xyGrid.getId(baseLongitude, baseLatitude);
+
+		final Map<Long, TransformOSHNode> nodeIdTransformNode = new HashMap<>(nodes.size());
 
 		final Map<Long, OSHNode> nodeIdOshMap = new HashMap<>(nodes.size());
-		for(TransformOSHNode node : nodes){
-			OSHNode osh = buildOSHNode(node, 0, 0, 0, 0);
-			nodeIdOshMap.put(osh.getId(), osh);
+		for (TransformOSHNode node : nodes) {
+			nodeIdTransformNode.put(node.getId(), node);
 		}
 
 		Collections.sort(ways);
-		
+
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
-	    final int[] offsets = new int[ways.size()];
-	    
-	    final Iterator<TransformOSHWay> itr = ways.iterator();
-	    
-	    int offset = 0;
-	    int size = 0;
-	    int seq = 0;
-	    while(itr.hasNext()){
-	        final TransformOSHWay way = itr.next();
-	    	final ByteBuffer record = buildOSHWayRecord(way, nodeIdOshMap, baseId, baseTimestamp, baseLongitude, baseLatitude);
-	    	offsets[size++] = offset;
-	    	out.write(record.array(),0,record.limit());
-	    	offset += record.limit();
-	    	
-	    	if(offset >= MAX_GRID_SIZE || !itr.hasNext()){
-	    		final byte[] data = out.toByteArray();
-	    	    handleWayGrid(zId,seq++,offsets,size,data);
-	    		offset = size = 0;
-	    		out.reset();
-	    	}
-	    }
-	    
+		final int[] offsets = new int[ways.size()];
+
+		final Iterator<TransformOSHWay> itr = ways.iterator();
+
+		int offset = 0;
+		int size = 0;
+		int seq = 0;
+		while (itr.hasNext()) {
+			final TransformOSHWay way = itr.next();
+			wayNodes.ensureCapacity(way.getNodeIds().length);
+			for (long nodeId : way.getNodeIds()) {
+				OSHNode osh = nodeIdOshMap.get(nodeId);
+				if (osh == null) {
+					TransformOSHNode node = nodeIdTransformNode.get(nodeId);
+					if (node != null) {
+						osh = buildOSHNode(node, 0, 0, 0, 0);
+						nodeIdOshMap.put(osh.getId(), osh);
+					}
+				}
+				if (osh != null) {
+					wayNodes.add(osh);
+				} else {
+					missingNode(nodeId);
+				}
+			}
+			final ByteBuffer record = buildOSHWayRecord(way, wayNodes, baseId, baseTimestamp, baseLongitude,
+					baseLatitude);
+			wayNodes.clear();
+
+			offsets[size++] = offset;
+			out.write(record.array(), 0, record.limit());
+			offset += record.limit();
+
+			if (offset >= MAX_GRID_SIZE || !itr.hasNext()) {
+				final byte[] data = out.toByteArray();
+				handleWayGrid(zId, seq++, offsets, size, data);
+				offset = size = 0;
+				out.reset();
+			}
+		}
 
 	}
 
-	
 	@Override
-	public void handleRelationGrid(long zId, List<TransformOSHRelation> relations, List<TransformOSHNode> nodes, List<TransformOSHWay> ways) throws IOException {
+	public void handleRelationGrid(long zId, List<TransformOSHRelation> relations, List<TransformOSHNode> nodes,
+			List<TransformOSHWay> ways) throws IOException {
 		if (zId < 0 || relations.size() == 0)
 			return;
-		
-//		final int zoom = ZGrid.getZoom(zId);
-//		final XYGrid xyGrid = new XYGrid(zoom);
-		
+
+		// final int zoom = ZGrid.getZoom(zId);
+		// final XYGrid xyGrid = new XYGrid(zoom);
+
 		final long baseId = 0;
 		final long baseTimestamp = 0;
 		final OSHDBBoundingBox bbox = ZGrid.getBoundingBox(zId);
 		final long baseLongitude = bbox.getMinLonLong() + (bbox.getMaxLonLong() - bbox.getMinLonLong()) / 2;
 		final long baseLatitude = bbox.getMinLatLong() + (bbox.getMaxLatLong() - bbox.getMinLatLong()) / 2;
-//		final long xyId = xyGrid.getId(baseLongitude, baseLatitude);
+		// final long xyId = xyGrid.getId(baseLongitude, baseLatitude);
 
-				
+		final Map<Long, TransformOSHNode> nodeIdTransformNode = new HashMap<>(nodes.size());
 		final Map<Long, OSHNode> nodeIdOshMap = new HashMap<>(nodes.size());
-		for(TransformOSHNode node : nodes){
-			final OSHNode osh = buildOSHNode(node, 0, 0, 0, 0);
-			nodeIdOshMap.put(osh.getId(), osh);
+		for (TransformOSHNode node : nodes) {
+			nodeIdTransformNode.put(node.getId(), node);
 		}
-		
+
 		final Map<Long, TransformOSHWay> tWayIdOshMap = new HashMap<>(ways.size());
-		for(TransformOSHWay way : ways){
+		for (TransformOSHWay way : ways) {
 			tWayIdOshMap.put(way.getId(), way);
 		}
-		
+
 		Collections.sort(relations);
-		
+
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
-	    final int[] offsets = new int[relations.size()];
-	    
-	    final Iterator<TransformOSHRelation> itr = relations.iterator();
-	    
-	    int offset = 0;
-	    int size = 0;
-	    int seq = 0;
-	    while(itr.hasNext()){
-		    final TransformOSHRelation relation =  itr.next();
-		    
-		    final Map<Long, OSHWay> wayIdOshMap = new HashMap<>(relation.getWayIds().length);
-		    for(long wid : relation.getWayIds()){
-		    	final TransformOSHWay way = tWayIdOshMap.get(wid);
-		    	if(way != null){
-		    		final OSHWay osh = buildOSHWay(way, nodeIdOshMap,0,0,0,0);
-		    		wayIdOshMap.put(osh.getId(), osh);
-		    	}
+		final int[] offsets = new int[relations.size()];
+
+		final Iterator<TransformOSHRelation> itr = relations.iterator();
+
+		int offset = 0;
+		int size = 0;
+		int seq = 0;
+		while (itr.hasNext()) {
+			final TransformOSHRelation relation = itr.next();
+			final Map<Long, OSHWay> wayIdOshMap = new HashMap<>(relation.getWayIds().length);
+			for (long wid : relation.getWayIds()) {
+				final TransformOSHWay way = tWayIdOshMap.get(wid);
+				if (way != null) {
+					wayNodes.ensureCapacity(way.getNodeIds().length);
+					for (long nodeId : way.getNodeIds()) {
+						OSHNode osh = nodeIdOshMap.get(nodeId);
+						if (osh == null) {
+							TransformOSHNode node = nodeIdTransformNode.get(nodeId);
+							if (node != null) {
+								osh = buildOSHNode(node, 0, 0, 0, 0);
+								nodeIdOshMap.put(osh.getId(), osh);
+							}
+						}
+						if (osh != null) {
+							wayNodes.add(osh);
+						} else {
+							missingNode(nodeId);
+						}
+					}
+
+					final OSHWay osh = buildOSHWay(way, wayNodes, 0, 0, 0, 0);
+					wayNodes.clear();
+					wayIdOshMap.put(osh.getId(), osh);
+				}else{
+					missingWay(wid);
+				}
 			}
-		    		    
-			ByteBuffer record = buildOSHRelationRecord(relation, nodeIdOshMap, wayIdOshMap, baseId, baseTimestamp, baseLongitude, baseLatitude);
-	    	offsets[size++] = offset;
-	    	out.write(record.array(),0,record.limit());
-	    	offset += record.limit();
-	    	
-	    	if(offset >= MAX_GRID_SIZE || !itr.hasNext()){
-	    		final byte[] data = out.toByteArray();
-	    		handleRelationGrid(zId, seq++, offsets, size, data);
-	    		offset = size = 0;
-	    		out.reset();
-	    	}
+
+			ByteBuffer record = buildOSHRelationRecord(relation, nodeIdOshMap, wayIdOshMap, baseId, baseTimestamp,
+					baseLongitude, baseLatitude);
+			offsets[size++] = offset;
+			out.write(record.array(), 0, record.limit());
+			offset += record.limit();
+
+			if (offset >= MAX_GRID_SIZE || !itr.hasNext()) {
+				final byte[] data = out.toByteArray();
+				handleRelationGrid(zId, seq++, offsets, size, data);
+				offset = size = 0;
+				out.reset();
+			}
 		}
 	}
 

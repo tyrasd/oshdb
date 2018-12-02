@@ -388,7 +388,7 @@ public class LoaderGrid {
 	}
 
 	private void load(long cellId) throws IOException {
-		final Grid grid = getGrid(cellId);// entityGrid[z];
+		final Grid grid = getGrid(cellId);
 
 		final boolean loadRelation = handler.loadRelCondition(grid) || cellId == 0;
 		final boolean loadWay = handler.loadWayCondition(grid) || cellId == 0;
@@ -396,7 +396,7 @@ public class LoaderGrid {
 
 		if (!loadRelation) {
 			long parentCellId = ZGrid.getParent(cellId);
-			final Grid parent = getGrid(parentCellId);// entityGrid[z - 1];
+			final Grid parent = getGrid(parentCellId);
 			moveUpRelation(grid, parent);
 
 			if (!loadWay) {
@@ -506,13 +506,8 @@ public class LoaderGrid {
 				while (!buffer.exhausted()) {
 						final int length = buffer.readInt();
 						final byte[] data = new byte[length];
-						try {
-							buffer.readFully(data);
-						} catch (EOFException eof) {
-							System.out.printf("z:%2d, %s, cellId:%d, length:%d%n", ZGrid.getZoom(grid.cellId), grid,
-									grid.cellId, length);
-							throw eof;
-						}
+						buffer.readFully(data);
+						
 						final TransformOSHNode osh = TransformOSHNode.instance(data, 0, length, 0, 0,0, 0);
 						oshNodes.add(osh);
 						
