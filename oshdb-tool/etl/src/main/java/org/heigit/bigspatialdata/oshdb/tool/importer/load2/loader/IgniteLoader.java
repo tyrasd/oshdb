@@ -67,6 +67,7 @@ public class IgniteLoader extends GridLoader implements Closeable {
 
 	private long totalBytes = 0;
 	private long bytesSinceFlush = 0;
+	private long totalNodeBytes = 0;
 	
 	@Override
 	public void handleNodeGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
@@ -75,6 +76,10 @@ public class IgniteLoader extends GridLoader implements Closeable {
 		long bytes = size*4 + data.length;
 		bytesSinceFlush += bytes;
 		totalBytes += bytes;
+		totalNodeBytes += bytes;
+		
+		System.out.printf("n %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId),
+				ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalNodeBytes), hRBC(totalBytes));
 	}
 	
 	@Override
@@ -92,6 +97,8 @@ public class IgniteLoader extends GridLoader implements Closeable {
 		}
 	}
 
+	private long totalWayBytes = 0;
+	
 	@Override
 	public void handleWayGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
 		super.handleWayGrid(zId, seq, offsets, size, data);
@@ -99,6 +106,10 @@ public class IgniteLoader extends GridLoader implements Closeable {
 		long bytes = size*4 + data.length;
 		bytesSinceFlush += bytes;
 		totalBytes += bytes;
+		totalWayBytes += bytes;
+		
+		System.out.printf("w %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId), ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalWayBytes), hRBC(totalBytes));
+
 	}
 	
 	@Override
@@ -115,6 +126,8 @@ public class IgniteLoader extends GridLoader implements Closeable {
 		}
 	}
 	
+	private long totalRelBytes = 0;
+	
 	@Override
 	public void handleRelationGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
 		super.handleWayGrid(zId, seq, offsets, size, data);
@@ -122,6 +135,9 @@ public class IgniteLoader extends GridLoader implements Closeable {
 		long bytes = size*4 + data.length;
 		bytesSinceFlush += bytes;
 		totalBytes += bytes;
+		totalRelBytes += bytes;
+		System.out.printf("r %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId), ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalRelBytes), hRBC(totalBytes));
+
 	}
 
 	@Override
@@ -278,9 +294,11 @@ public class IgniteLoader extends GridLoader implements Closeable {
 	    CacheConfiguration<Long, T> cacheCfg = new CacheConfiguration<>(cacheName);
 	    cacheCfg.setBackups(0);
 	    cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+	    
+	    IgniteCache<Long, T> cache = ignite.getOrCreateCache(cacheCfg);
 	    ignite.cluster().disableWal(cacheName);
 
-	    IgniteCache<Long, T> cache = ignite.getOrCreateCache(cacheCfg);
+	    
 	    return ignite.dataStreamer(cache.getName());
 	}
 
