@@ -9,7 +9,7 @@ import org.heigit.bigspatialdata.oshdb.util.OSHDBRole;
  *
  * @author Rafael Troilo <r.troilo@uni-heidelberg.de>
  */
-public class OSMMember {
+public class OSMMember implements Comparable<OSMMember> {
 
 	private final long id;
 	private final OSMType type;
@@ -76,6 +76,17 @@ public class OSMMember {
 		if (type != other.type)
 			return false;
 		return true;
+	}
+
+	@Override
+	public int compareTo(OSMMember o) {
+		int c = Integer.compare(type.intValue(), o.type.intValue());
+		if(c == 0){
+			c = Long.compare(id, o.id);
+			if(c == 0)
+				c = Integer.compare(roleId, o.roleId);
+		}
+		return c;
 	}
 
 }

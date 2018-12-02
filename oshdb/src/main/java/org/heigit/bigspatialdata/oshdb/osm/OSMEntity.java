@@ -174,7 +174,7 @@ public abstract class OSMEntity {
 			return false;
 		if (id != other.id)
 			return false;
-		if (!Arrays.equals(tags, other.tags))
+		if (isVisible() && !Arrays.equals(tags, other.tags))
 			return false;
 		if (timestamp == null) {
 			if (other.timestamp != null)
@@ -190,7 +190,7 @@ public abstract class OSMEntity {
 
 	public boolean equalsTo(OSMEntity o) {
 		return id == o.id && version == o.version && timestamp.equals(o.timestamp) && changeset == o.changeset
-				&& userId == o.userId && Arrays.equals(tags, o.tags);
+				&& userId == o.userId && (!isVisible() || Arrays.equals(tags, o.tags));
 	}
 
 	@Override
