@@ -8,9 +8,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -28,11 +26,9 @@ import org.heigit.bigspatialdata.oshdb.tool.importer.cli.validator.DirExistValid
 import org.heigit.bigspatialdata.oshdb.tool.importer.cli.validator.FileExistValidator;
 import org.heigit.bigspatialdata.oshdb.tool.importer.extract.Extract;
 import org.heigit.bigspatialdata.oshdb.tool.importer.extract.data.OsmPbfMeta;
-import org.heigit.bigspatialdata.oshdb.tool.importer.load2.Load.Args;
 import org.heigit.bigspatialdata.oshdb.tool.importer.transform.TransformerTagRoles;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagId;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagToIdMapper;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTag;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.v0_6.impl.osh.builder.OSHNodeBuilder;
@@ -156,8 +152,8 @@ public class V6Main {
 	}
 
 	public void transform(Block block) {
-		System.out.printf("%12d:%6d - %s(%d) %10d->%10d%n", block.pos, block.id, block.type, block.oshs.size(),
-				block.oshs.get(0).getId(), block.oshs.get(block.oshs.size() - 1).getId());
+//		System.out.printf("%12d:%6d - %s(%d) %10d->%10d%n", block.pos, block.id, block.type, block.oshs.size(),
+//				block.oshs.get(0).getId(), block.oshs.get(block.oshs.size() - 1).getId());
 
 		for (Osh osh : block.oshs) {
 			if (lastOsh != null && lastOsh.getType() != osh.getType()) {
@@ -389,7 +385,6 @@ public class V6Main {
 	int sequence = 0;
 
 	private void writeOut(long id, long minLongitude, long minLatitude, long maxLongitude, long maxLatitude, SortedSet<OSHDBTag> tagSet, int header, ByteBuffer bytes) throws IOException {
-
 		for (; nextId < id; nextId++) {
 			outIndex.writeLong(-1);
 		}
@@ -422,6 +417,8 @@ public class V6Main {
 	}
 	
 	private void writeOutGridSort() throws FileNotFoundException, IOException{
+		System.out.print("write out sorted grid ... ");
+		Stopwatch stopwatch = Stopwatch.createStarted();
 		try(DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(String.format("%s_%04d", outGridPath,sequence++))))){
 			Iterator<SortKey> gridItr = gridSort.parallelStream().sorted().iterator();
 			SortKey key = gridItr.next();
@@ -443,6 +440,7 @@ public class V6Main {
 				serUtil.writeVulong(out,key.pos);
 			}					
 		}
+		System.out.println(stopwatch);
 	}
 
 	private static class SortKey implements Comparable<SortKey> {
