@@ -76,7 +76,7 @@ public class ReaderCellData implements Iterator<CellData>, Closeable{
 			final ByteArrayWrapper wrapper = ByteArrayWrapper.newInstance(bytes, 0, bytes.length);
 			final long id = wrapper.readUInt64();
 			size--;
-			return new CellData(zId, id,type, bytes);
+			return new CellData(zId, id,type, bytes,path);
 		}
 		return null;
 	}

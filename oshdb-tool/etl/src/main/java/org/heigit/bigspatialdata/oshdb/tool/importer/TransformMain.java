@@ -79,7 +79,7 @@ public class TransformMain {
 		Step step;
 
 	}
-
+	
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 		Args config = new Args();
 		JCommander jcom = JCommander.newBuilder().addObject(config).build();
@@ -111,6 +111,8 @@ public class TransformMain {
 		System.out.println("available memory for transformation: " + availableHeapMemory / (1024L * 1024L) + "mb");
 
 		ByteBuffer zoomCellId = ByteBuffer.allocate(5);
+		
+		boolean mappedBuffer = true;
 
 		switch (step) {
 		case Node: {
@@ -118,9 +120,9 @@ public class TransformMain {
 			try (CellDataSink cellDataSink = new CellDataMap(workDir, String.format("transform_node_%02d", workerId),
 					availableHeapMemory / 2)) {
 				try (OutputStream id2Cell = Files.asByteSink(id2CellPath.toFile()).openBufferedStream();
-						OutputStream id2CellIdx = Files.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile())
-								.openBufferedStream();
-						IdToCellSink idToCellSink = new PlainIdToCellSink(id2CellIdx, id2Cell)) {
+					 OutputStream id2CellIdx = Files.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile()).openBufferedStream();
+					 OutputStream bitmapOut = Files.asByteSink(workDir.resolve(String.format("transform_bitmap_node_%02d", workerId)).toFile()).openBufferedStream();
+						IdToCellSink idToCellSink = new PlainIdToCellSink(id2CellIdx, id2Cell,bitmapOut)) {
 					TransformNode.transform(config.transformArgs, tagToId, cellDataSink, idToCellSink);
 				}
 
@@ -137,12 +139,11 @@ public class TransformMain {
 					CellRefSink cellRefSink = new CellRefMap(workDir, String.format("transform_ref_way_%02d", workerId),
 							refMemory)) {
 				try (OutputStream id2Cell = Files.asByteSink(id2CellPath.toFile()).openBufferedStream();
-						OutputStream id2CellIdx = Files.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile())
-								.openBufferedStream();
-						IdToCellSink idToCellSink = new PlainIdToCellSink(id2CellIdx, id2Cell)) {
+					 OutputStream id2CellIdx = Files.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile()).openBufferedStream();
+					 OutputStream bitmapOut = Files.asByteSink(workDir.resolve(String.format("transform_bitmap_way_%02d", workerId)).toFile()).openBufferedStream();
+						IdToCellSink idToCellSink = new PlainIdToCellSink(id2CellIdx, id2Cell,bitmapOut)) {
 
-					IdToCellSource nodeToCellSource = PlainIdToCellSource.get(workDir, "transform_id2cell_node_*.idx",
-							false);
+					IdToCellSource nodeToCellSource = PlainIdToCellSource.get(workDir, "transform_id2cell_node_*.idx", mappedBuffer);
 					TransformWay.transform(config.transformArgs, tagToId, cellDataSink, cellRefSink, idToCellSink,
 							nodeToCellSource);
 				}
@@ -172,12 +173,12 @@ public class TransformMain {
 				 };
 					CellRefSink cellRefSink = new CellRefMap(workDir, String.format("transform_ref_relation_%02d", workerId), refMemory)) {
 				try (OutputStream id2Cell = Files.asByteSink(id2CellPath.toFile()).openBufferedStream();
-						OutputStream id2CellIdx = Files.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile())
-								.openBufferedStream();
-						IdToCellSink idToCellSink = new PlainIdToCellSink(id2CellIdx, id2Cell)) {
+					 OutputStream id2CellIdx = Files.asByteSink(Paths.get(id2CellPath.toString() + ".idx").toFile()).openBufferedStream();
+					 OutputStream bitmapOut = Files.asByteSink(workDir.resolve(String.format("transform_bitmap_relation_%02d", workerId)).toFile()).openBufferedStream();
+					 IdToCellSink idToCellSink = new PlainIdToCellSink(id2CellIdx, id2Cell,bitmapOut)) {
 
-					IdToCellSource nodeToCellSource = PlainIdToCellSource.get(workDir, "transform_id2cell_node_*.idx", false);
-					IdToCellSource wayToCellSource = PlainIdToCellSource.get(workDir, "transform_id2cell_way_*.idx", false);
+					IdToCellSource nodeToCellSource = PlainIdToCellSource.get(workDir, "transform_id2cell_node_*.idx", mappedBuffer);
+					IdToCellSource wayToCellSource = PlainIdToCellSource.get(workDir, "transform_id2cell_way_*.idx", mappedBuffer);
 					
 					TransformRelation.transform(config.transformArgs, tagToId, cellDataSink,nonSimpleRelSink, cellRefSink, idToCellSink, nodeToCellSource, wayToCellSource);
 				}

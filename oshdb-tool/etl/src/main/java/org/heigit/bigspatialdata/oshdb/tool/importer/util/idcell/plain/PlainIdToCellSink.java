@@ -9,6 +9,7 @@ import java.util.Arrays;
 
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.idcell.IdToCellSink;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import com.google.common.io.CountingOutputStream;
 
@@ -32,17 +33,21 @@ public class PlainIdToCellSink implements IdToCellSink {
 
 	private final DataOutputStream idCellOutIdx;
 	private final CountingOutputStream idCellOut;
+	
+	private final Roaring64NavigableMap bitmap = new Roaring64NavigableMap();
+	private final DataOutputStream bitmapOut;
 
-	public PlainIdToCellSink(OutputStream idCellOutIdx, OutputStream idCellOut) {
-		this(DEFAULT_PAGE_SIZE, idCellOutIdx, idCellOut);
+	public PlainIdToCellSink(OutputStream idCellOutIdx, OutputStream idCellOut, OutputStream bitmapOut) {
+		this(DEFAULT_PAGE_SIZE, idCellOutIdx, idCellOut, bitmapOut);
 	}
 
-	public PlainIdToCellSink(long pageSize, OutputStream idCellOutIdx, OutputStream idCellOut) {
+	public PlainIdToCellSink(long pageSize, OutputStream idCellOutIdx, OutputStream idCellOut, OutputStream bitmapOut) {
 		this.pageSize = Long.highestOneBit(pageSize - 1) << 1;
 		this.pageMask = pageSize - 1;
 		this.page = new long[Math.toIntExact(pageSize)];
 		this.idCellOutIdx = new DataOutputStream(idCellOutIdx);
 		this.idCellOut = new CountingOutputStream(idCellOut);
+		this.bitmapOut = new DataOutputStream(bitmapOut);
 	}
 
 	@Override
@@ -50,6 +55,9 @@ public class PlainIdToCellSink implements IdToCellSink {
 		flushPage();
 		idCellOutIdx.close();
 		idCellOut.close();
+		
+		bitmap.serialize(bitmapOut);
+		bitmapOut.close();
 	}
 
 	@Override
@@ -66,6 +74,7 @@ public class PlainIdToCellSink implements IdToCellSink {
 		}
 		page[offset] = cellId;
 		pageFillSize++;
+		bitmap.add(key);
 	}
 
 	private void flushPage() throws IOException {
@@ -86,6 +95,7 @@ public class PlainIdToCellSink implements IdToCellSink {
 
 		Arrays.fill(page, -2);
 		pageFillSize = 0;
+		bitmap.runOptimize();
 	}
 
 }
