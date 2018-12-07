@@ -36,7 +36,7 @@ public class OSHGridSort implements Closeable {
 	
 	public OSHGridSort(int maxSize, String gridSortPath){
 		this.maxSize = maxSize;
-		this.gridSort = null; //new ArrayList<>(maxSize);
+		this.gridSort = new ArrayList<>(maxSize);
 		this.gridSortPath = gridSortPath;
 	}
 	
