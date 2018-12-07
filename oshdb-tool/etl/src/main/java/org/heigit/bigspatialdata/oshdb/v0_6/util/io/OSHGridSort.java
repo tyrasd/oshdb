@@ -13,6 +13,7 @@ import java.util.Iterator;
 import org.apache.orc.impl.SerializationUtils;
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
@@ -44,7 +45,6 @@ public class OSHGridSort implements Closeable {
 		gridSort.add(key);
 		if(gridSort.size() >= maxSize){		
 			writeOut();
-			gridSort.clear();
 		}
 	}
 	
@@ -54,7 +54,10 @@ public class OSHGridSort implements Closeable {
 	}
 	
 	private void writeOut() throws FileNotFoundException, IOException{
-		try(OutputStream out = new BufferedOutputStream(new FileOutputStream(String.format("%s_%04d", gridSortPath,sequence++)))){
+		final String filename = String.format("%s_%04d", gridSortPath,sequence++);
+		System.out.print("write grid.index for "+gridSort.size()+" to "+filename+" ... ");
+		Stopwatch stopwatch = Stopwatch.createStarted();
+		try(OutputStream out = new BufferedOutputStream(new FileOutputStream(filename))){
 			PeekingIterator<SortKey> gridItr = Iterators.peekingIterator(gridSort.parallelStream().sorted().iterator());
 			final int BATCH = 255;	
 			LongArrayList outId = new LongArrayList(BATCH);
@@ -62,7 +65,8 @@ public class OSHGridSort implements Closeable {
 			long lastKey = 0;
 			while(gridItr.hasNext()){
 				long key = gridItr.peek().sortKey();
-				
+				outId.clear();
+				outPos.clear();
 				while(gridItr.hasNext() && gridItr.peek().sortKey() == key){
 					SortKey sk = gridItr.next();
 					outId.add(sk.oshId());
@@ -74,8 +78,9 @@ public class OSHGridSort implements Closeable {
 				writeBatch(out,key - lastKey,outId,outPos);	
 				lastKey = key;
 			}
-			
 		}
+		gridSort.clear();
+		System.out.println(stopwatch);
 	}
 	
 	private void writeBatch(OutputStream out, long key, LongArrayList outId, LongArrayList outPos) throws IOException{
