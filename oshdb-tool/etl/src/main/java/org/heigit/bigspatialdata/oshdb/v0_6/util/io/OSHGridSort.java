@@ -6,11 +6,17 @@ import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.orc.impl.SerializationUtils;
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
+
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
+
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 public class OSHGridSort implements Closeable {
 	
@@ -21,6 +27,7 @@ public class OSHGridSort implements Closeable {
 	}
 
 	private final SerializationUtils serUtil = new SerializationUtils();
+	private final DeltaIntegerWriter intWriter = new DeltaIntegerWriter("", false);
 	
 	private final int maxSize;
 	private final ArrayList<SortKey> gridSort;
@@ -34,45 +41,69 @@ public class OSHGridSort implements Closeable {
 	}
 	
 	public void add(SortKey key) throws FileNotFoundException, IOException{
-//		gridSort.add(key);
-//		if(gridSort.size() >= maxSize){		
-//			writeOut();
-//			gridSort.clear();
-//		}
+		gridSort.add(key);
+		if(gridSort.size() >= maxSize){		
+			writeOut();
+			gridSort.clear();
+		}
 	}
 	
 	@Override
 	public void close() throws IOException {
-	//	writeOut();
+		writeOut();
 	}
 	
 	private void writeOut() throws FileNotFoundException, IOException{
-		try(DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(String.format("%s_%04d", gridSortPath,sequence++))))){
-			Iterator<SortKey> gridItr = gridSort.parallelStream().sorted().iterator();
-			SortKey key = gridItr.next();
-			long sortKey = key.sortKey();
-			
-			long oshId = key.oshId() + 1; // avaid 0 oshId!
-			long pos = key.pos();
-			
-			serUtil.writeVulong(out,sortKey);
-			serUtil.writeVulong(out,oshId);
-			serUtil.writeVulong(out,pos);
-			
+		try(OutputStream out = new BufferedOutputStream(new FileOutputStream(String.format("%s_%04d", gridSortPath,sequence++)))){
+			PeekingIterator<SortKey> gridItr = Iterators.peekingIterator(gridSort.parallelStream().sorted().iterator());
+			final int BATCH = 255;	
+			LongArrayList outId = new LongArrayList(BATCH);
+			LongArrayList outPos = new LongArrayList(BATCH);
+			long lastKey = 0;
 			while(gridItr.hasNext()){
-				key = gridItr.next();
-				if(key.sortKey() != sortKey){
-					serUtil.writeVulong(out,0);
-					final long sortKeyDelta = key.sortKey() - sortKey;
-					serUtil.writeVulong(out,sortKeyDelta);
-					sortKey = key.sortKey();
+				long key = gridItr.peek().sortKey();
+				
+				while(gridItr.hasNext() && gridItr.peek().sortKey() == key){
+					SortKey sk = gridItr.next();
+					outId.add(sk.oshId());
+					outPos.add(sk.pos());
+					if(outId.size() == 255){
+						break;
+					}
 				}
+				writeBatch(out,key - lastKey,outId,outPos);	
+				lastKey = key;
+			}
 			
-				oshId = key.oshId() + 1; // avid 0 oshId!
-				pos = key.pos();
-				serUtil.writeVulong(out,oshId);
-				serUtil.writeVulong(out,pos);
-			}					
 		}
 	}
+	
+	private void writeBatch(OutputStream out, long key, LongArrayList outId, LongArrayList outPos) throws IOException{
+		serUtil.writeVulong(out, key);
+		out.write(outId.size());
+		if(outId.size() > 4){
+			intWriter.write(out, writer -> {
+				for(long l : outId){
+					writer.write(l);
+				}
+			});
+			intWriter.write(out, writer -> {
+				for(long l : outPos){
+					writer.write(l);
+				}
+			});
+		}else{
+			long ll = 0;
+			for(long l : outId){
+				serUtil.writeVulong(out, l - ll);
+				ll = 0;
+			}
+			ll = 0;
+			for(long l : outPos){
+				serUtil.writeVulong(out, l - ll);
+				ll = 0;
+			}
+		}
+	}
+	
 }
