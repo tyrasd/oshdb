@@ -2,6 +2,7 @@ package org.heigit.bigspatialdata.oshdb.v0_6.util;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 
 import org.heigit.bigspatialdata.oshdb.v0_6.OSHDB;
@@ -18,6 +19,8 @@ public class LCS {
 			this.bits = bits;
 		}
 	}
+	
+	public static final EnumSet<LCS.ActionType> actionWithDiff = EnumSet.of(LCS.ActionType.ADD, LCS.ActionType.UPDATE);
 
 	public class Action {
 		public final ActionType type;

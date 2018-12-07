@@ -17,21 +17,32 @@ public class OSHDB {
 		return (double) ((double) x * GEOM_PRECISION);
 	}
 	
+	public static final int MAX_ZOOM = 15;
+	
 	public static final long VALID_MIN_LONGITUDE = doubleToLong(-180.0);
 	public static final long VALID_MIN_LATITUDE = doubleToLong(-90.0);
 	public static final long VALID_MAX_LONGITUDE = doubleToLong(180.0);
 	public static final long VALID_MAX_LATITUDE = doubleToLong(90.0);
 
-	public static final int OSH_HEADER_SINGLE   = 1 << 7;// 0b10000000;
-	public static final int OSH_HEADER_VISIBLE  = 1 << 6;// 0b01000000;
-	public static final int OSH_HEADER_COMPLETE = 1 << 5;// 0b00100000;
-	public static final int OSH_HEADER_HAS_TAGS = 1 << 4;// 0b00010000;
-	public static final int OSH_HEADER_IS_POINT = 1 << 3;// 0b00001000;
-	public static final int OSH_HEADER_INVALID  = 1 << 2;// 0b00000100;
+	public static final int OSH_HEADER_SINGLE   = 1 << 7;// 0b10000000; single osh entity
+	public static final int OSH_HEADER_VISIBLE  = 1 << 6;// 0b01000000; still visible
+	public static final int OSH_HEADER_INVALID  = 1 << 5;// 0b00100000;
+	public static final int OSH_HEADER_HAS_TAGS = 1 << 4;// 0b00010000; has tags
+	
+	public static final int OSH_HEADER_NODE_POINT         = 1 << 3;// 0b00001000;
+	public static final int OSH_HEADER_NODE_BACKREF_WAY   = 1 << 2; //
+	public static final int OSH_HEADER_NODE_BACKREF_REL   = 1 << 1; //
+	
+	public static final int OSH_HEADER_REL_BACKREF_REL	   = 1 << 3;
+	public static final int OSH_HEADER_REL_DUP1 = 1 << 2;
+	public static final int OSH_HEADER_REL_DUP2 = 1 << 1;
+	
+	
+	
 
 	public static final int OSM_HEADER_END = 1 << 7;// 0b10000000;
 	public static final int OSM_HEADER_VISIBLE = 1 << 6;// 0b01000000;
-	public static final int OSM_HEADER_COMPLETE = 1 << 5;// 0b00100000;
+	public static final int OSM_HEADER_MISSING = 1 << 5;// 0b00100000;
 	public static final int OSM_HEADER_CHG_TAGS = 1 << 4;// 0b00010000;
 	public static final int OSM_HEADER_CHG_UID = 1 << 3;// 0b00001000;
 	public static final int OSM_HEADER_CHG_CS = 1 << 2;// 0b00000100;
