@@ -133,12 +133,10 @@ public class TransformMain {
 
 		try (OutputStream indexOut = new BufferedOutputStream(
 				new FileOutputStream(workDir.resolve(prefix + ".index").toFile()));
-				OutputStream dataOut = new BufferedOutputStream(
-						new FileOutputStream(workDir.resolve(prefix + ".data").toFile()));
-				OSHGridSort sort = new OSHGridSort(250_000_000, workDir.resolve(prefix + ".grid").toString())) {
-
-			BytesSink store = FullIndexByteStore.getSink(workDir.resolve(prefix).toString());
-
+				OutputStream dataOut = new BufferedOutputStream(new FileOutputStream(workDir.resolve(prefix + ".data").toFile()));
+				OSHGridSort sort = new OSHGridSort(250_000_000, workDir.resolve(prefix + ".grid").toString());
+				BytesSink store = FullIndexByteStore.getSink(workDir.resolve(prefix).toString())) {
+			
 			final long start;
 			final long end;
 			final Transformer transformer;

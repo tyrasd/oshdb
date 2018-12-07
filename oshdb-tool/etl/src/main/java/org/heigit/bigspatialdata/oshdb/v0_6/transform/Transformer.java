@@ -77,7 +77,7 @@ public abstract class Transformer {
 			}
 
 			if (lastOsh.getId() == osh.getId()) {
-//				System.out.println("merge id " + lastOsh.getId() + " from block " + lastBlockId + " with " + block.id);
+				System.out.println("merge id " + lastOsh.getId() + " from block " + lastBlockId + " with " + block.id);
 				lastOsh.getVersions().addAll(osh.getVersions());
 				continue;
 			}
