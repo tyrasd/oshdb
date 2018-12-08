@@ -16,6 +16,7 @@ import org.heigit.bigspatialdata.oshdb.v0_6.osm.OSMMember;
 import org.heigit.bigspatialdata.oshdb.v0_6.osm.OSMNode;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.v0_6.osm.OSMWay;
+import org.heigit.bigspatialdata.oshdb.v0_6.transform.rx.Block;
 import org.heigit.bigspatialdata.oshdb.tool.importer.extract.data.OsmPbfMeta;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagToIdMapper;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTag;
@@ -25,6 +26,7 @@ import org.heigit.bigspatialdata.oshdb.v0_6.impl.osh.OSHNodeReader;
 import org.heigit.bigspatialdata.oshdb.v0_6.impl.osh.builder.OSHWaySerializer;
 import org.heigit.bigspatialdata.oshdb.v0_6.impl.osh.OSHWayReader;
 import org.heigit.bigspatialdata.oshdb.v0_6.impl.osm.OSMWayImpl;
+import org.heigit.bigspatialdata.oshdb.v0_6.util.LongKeyValueSink;
 import org.heigit.bigspatialdata.oshdb.v0_6.util.backref.RefToBackRefs;
 import org.heigit.bigspatialdata.oshdb.v0_6.util.io.BytesSink;
 import org.heigit.bigspatialdata.oshdb.v0_6.util.io.BytesSource;
@@ -53,14 +55,14 @@ public class TransformerWay extends Transformer {
 
 	private final BytesSink store;
 	private final BytesSource nodeSource;
-	private final OSHGridSort sort;
+	private final LongKeyValueSink sort;
 	private final PeekingIterator<RefToBackRefs> backRefsRelations;
 	private final LoadingCache<Long, ByteBuffer> nodeCache;
 
 	private final ObjectArrayList<OSMWay> versions = new ObjectArrayList<>();	
 	private final OSHWaySerializer oshSerializer = new OSHWaySerializer(); 
 
-	public TransformerWay(TagToIdMapper tagToId, BytesSink store, BytesSource nodeSource, PeekingIterator<RefToBackRefs> backRefsRelations, OSHGridSort sort) {
+	public TransformerWay(TagToIdMapper tagToId, BytesSink store, BytesSource nodeSource, PeekingIterator<RefToBackRefs> backRefsRelations, LongKeyValueSink sort) {
 		super(tagToId);
 		this.store = store;
 		this.nodeSource = nodeSource;
@@ -84,7 +86,7 @@ public class TransformerWay extends Transformer {
 	}
 	
 	@Override
-	protected void transformEntities(long id, OSMType type, List<Entity> entities) {		
+	protected void transformEntities(long id, OSMType type, List<Entity> entities,Block block) {		
 		oshSerializer.reset();
 		versions.ensureCapacity(entities.size());
 		for (Entity entity : entities) {
@@ -181,51 +183,4 @@ public class TransformerWay extends Transformer {
 		}
 		return members;
 	}
-
-	private static class WaySortKey implements OSHGridSort.SortKey<WaySortKey> {
-		public final long zId;
-		public final long midLongitude;
-		public final long midLatitude;
-		public final long id;
-		public final long pos;
-
-		private WaySortKey(long zId, long midLongitude, long midLatitude, long id, long pos) {
-			this.zId = zId;
-			this.midLongitude = midLongitude;
-			this.midLatitude = midLatitude;
-			this.id = id;
-			this.pos = pos;
-		}
-
-		@Override
-		public long sortKey() {
-			return zId;
-		}
-
-		@Override
-		public long oshId() {
-			return id;
-		}
-
-		@Override
-		public long pos() {
-			return pos;
-		}
-
-		@Override
-		public int compareTo(WaySortKey o) {
-			int c = Long.compare(zId, o.zId);
-			if (c == 0) {
-				c = Long.compare(midLongitude, o.midLongitude);
-				if (c == 0) {
-					c = Long.compare(midLatitude, o.midLatitude);
-					if (c == 0)
-						c = Long.compare(id, o.id);
-				}
-			}
-			return c;
-		}
-
-	}
-
 }

@@ -61,7 +61,7 @@ public abstract class Transformer {
 		for (Osh osh : block.oshs) {
 			if (lastOsh != null && lastOsh.getType() != osh.getType()) {
 				System.out.println("switch type from " + lastOsh.getType() + " to " + osh.getType());
-				transform(lastOsh);
+				transform(lastOsh,block);
 				lastOsh = null;
 			}
 
@@ -77,18 +77,18 @@ public abstract class Transformer {
 			}
 
 			if (lastOsh.getId() == osh.getId()) {
-				System.out.println("merge id " + lastOsh.getId() + " from block " + lastBlockId + " with " + block.id);
+//				System.out.println("merge id " + lastOsh.getId() + " from block " + lastBlockId + " with " + block.id);
 				lastOsh.getVersions().addAll(osh.getVersions());
 				continue;
 			}
 
-			transform(lastOsh);
+			transform(lastOsh, block);
 			lastOsh = osh;
 		}
 		lastBlockId = block.id;
 	}
 
-	protected void transform(Osh osh) {
+	protected void transform(Osh osh,Block block) {
 		final long id = osh.getId();
 		final List<Entity> entities = osh.getVersions();
 		entities.sort((a, b) -> {
@@ -110,13 +110,13 @@ public abstract class Transformer {
 		minTimestamp = Long.MAX_VALUE;
 		maxTimestamp = Long.MIN_VALUE;
 
-		transformEntities(id, osh.getType(), entities);
+		transformEntities(id, osh.getType(), entities,block);
 	}
 
-	protected abstract void transformEntities(long id, OSMType type, List<Entity> entities);
+	protected abstract void transformEntities(long id, OSMType type, List<Entity> entities,Block block);
 
 	protected void complete() {
-		transform(lastOsh);
+		transform(lastOsh,null);
 	}
 
 	protected List<OSHDBTag> getKeyValue(TagText[] tags) {

@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.heigit.bigspatialdata.oshdb.v0_6.osm.OSMNode;
+import org.heigit.bigspatialdata.oshdb.v0_6.transform.rx.Block;
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagToIdMapper;
@@ -48,7 +49,7 @@ public class TransformerNode extends Transformer {
 	}
 	
 	@Override
-	protected void transformEntities(long id, OSMType type, List<Entity> entities) {
+	protected void transformEntities(long id, OSMType type, List<Entity> entities,Block block) {
 		oshSerializer.reset();
 		versions.ensureCapacity(entities.size());
 		for (Entity entity : entities) {
@@ -88,6 +89,7 @@ public class TransformerNode extends Transformer {
 			
 			ByteBuffer bytes = ByteBuffer.wrap(out.array, 0, out.length);
 			if (!check(versions, id, bytes)) {
+				System.out.println("id "+id+" check fail! blockId:"+block.id+", blockPos:"+block.pos);
 				System.exit(2);
 			}
 			long pos = store.write(id, bytes);
