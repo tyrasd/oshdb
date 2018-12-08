@@ -1,5 +1,6 @@
 package org.heigit.bigspatialdata.oshdb.v0_6.transform;
 
+import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.heigit.bigspatialdata.oshdb.v0_6.util.io.OSHGridSort.SortKey;
 
 public class GridSortKey implements SortKey<GridSortKey> {
@@ -16,7 +17,7 @@ public class GridSortKey implements SortKey<GridSortKey> {
 
 	@Override
 	public int compareTo(GridSortKey o) {
-		int c = Long.compare(zid, o.zid);
+		int c = ZGrid.ORDER_DFS_BOTTOM_UP.compare(zid, o.zid);
 		if(c == 0){
 			c = Long.compare(id, o.id);
 		}
