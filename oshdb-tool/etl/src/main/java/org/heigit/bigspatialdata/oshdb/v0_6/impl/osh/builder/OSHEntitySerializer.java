@@ -57,19 +57,18 @@ public abstract class OSHEntitySerializer {
 
 	protected void addEntity(OSMEntity osm) {
 		final int version = osm.getVersion();
+		final long timestamp = osm.getTimestamp().getRawUnixTimestamp();
+		
 		if (maxVersion < version) {
 			maxVersion = version;
 			lastVisibility = osm.isVisible();
-		}
-
-		final long timestamp = osm.getTimestamp().getRawUnixTimestamp();
-		if (minTimestamp > timestamp) {
-			minTimestamp = timestamp;
-		}
-		if (maxTimestamp < timestamp) {
 			maxTimestamp = timestamp;
 		}
 
+		if (minTimestamp > timestamp) {
+			minTimestamp = timestamp;
+		}
+		
 		osm.getTags().forEach(tagSet::add);
 		uidSet.add(osm.getUserId());
 	}
