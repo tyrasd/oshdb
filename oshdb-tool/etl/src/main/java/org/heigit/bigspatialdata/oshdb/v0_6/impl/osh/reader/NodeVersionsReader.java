@@ -66,7 +66,8 @@ public class NodeVersionsReader extends EntityVersionsReader implements Iterator
 		if(last)
 			return null;
 		
-		nextEntity();
+		if(!nextEntity())
+			return null;
 		
 		if(visible){
 			if((header & OSHDB.OSM_HEADER_CHG_EXT) != 0){

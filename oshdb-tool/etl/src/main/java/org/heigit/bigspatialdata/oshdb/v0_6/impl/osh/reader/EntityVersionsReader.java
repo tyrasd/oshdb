@@ -104,16 +104,19 @@ public class EntityVersionsReader {
 		this.idxToTag = idxToTag;
 	}
 
-	protected void nextEntity() throws IOException {
+	protected boolean nextEntity() throws IOException {
 		header = in.read();
 		version += OSHDB.sortOrder.dir;
 
+		last = (header & OSHDB.OSM_HEADER_END) != 0;
 		while ((header & OSHDB.OSM_HEADER_MISSING) != 0) {
+			if(last)
+				return false;
+			
 			header = in.read();
 			version += OSHDB.sortOrder.dir;
 		}
 
-		last = (header & OSHDB.OSM_HEADER_END) != 0;
 		visible = (header & OSHDB.OSM_HEADER_VISIBLE) != 0;
 
 		long dTimestamp = SerializationUtils.readVslong(in);
@@ -136,6 +139,7 @@ public class EntityVersionsReader {
 				prevTags.clear();
 			}
 		}
+		return true;
 	}
 
 	private void swapTags() {

@@ -32,9 +32,16 @@ public class NodeVersionsSerializer extends EntityVersionsSerializer {
 			serUtils.writeVslong(output, latitude);
 			prevLongitude = version.getLongitude();
 			prevLatitude = version.getLatatitde();
+			
 		}else {
 			prevLongitude = longitude;
 			prevLatitude = latitude;
+		}
+		
+		if(!single && !itr.hasNext()){
+		    int	header = OSHDB.OSM_HEADER_END | OSHDB.OSM_HEADER_MISSING;
+		    output.write(header);
+		    return;
 		}
 		
 		
