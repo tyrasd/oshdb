@@ -79,7 +79,6 @@ public class WayVersionsReader extends EntityVersionsReader implements Iterator<
 
 		OSMWay ret = next;
 		next = null;
-
 		return ret;
 	}
 
@@ -87,7 +86,9 @@ public class WayVersionsReader extends EntityVersionsReader implements Iterator<
 		if (last)
 			return null;
 
-		nextEntity();
+		if(!nextEntity()){
+			return null;
+		}
 
 		if (visible) {
 			if ((header & OSHDB.OSM_HEADER_CHG_EXT) != 0) {

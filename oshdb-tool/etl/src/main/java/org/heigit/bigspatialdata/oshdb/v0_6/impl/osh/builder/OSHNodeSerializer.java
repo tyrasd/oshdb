@@ -61,7 +61,11 @@ public class OSHNodeSerializer extends OSHEntitySerializer {
 		}
 	}
 	
+	
 	public void serialize(OutputStream out, List<OSMNode> versions, long[] ways, long[] relations) throws IOException{
+		serialize(out, versions, ways, relations, 0, 0);
+	}
+	public void serialize(OutputStream out, List<OSMNode> versions, long[] ways, long[] relations,long baseLongitude, long baseLatiude) throws IOException{
 		int header = commonHeader(versions);
 				
 		if (minLongitude == maxLongitude && minLatitude == maxLatitude) {
@@ -96,9 +100,7 @@ public class OSHNodeSerializer extends OSHEntitySerializer {
 				serUtil.writeVulong(out, dLatitude);
 			}
 		}
-
-
-		
+	
 		writeCommonOSHEnvelope(out, header);
 		
 		if(ways.length > 0){
@@ -112,8 +114,6 @@ public class OSHNodeSerializer extends OSHEntitySerializer {
 		long longitude = minLongitude;
 		long latitude = minLatitude;
 		
-
-
 		serialize.serialize(out, versions, visible, single, hasTags, point, longitude, latitude, uidToIdx, tagToIdx);
 	}
 }

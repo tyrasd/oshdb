@@ -21,6 +21,11 @@ public class OSHNodeReader extends OSHEntityReader implements OSHNode {
 	private final LongArrayList backRefRelations = new LongArrayList();
 	
 	private boolean point;
+	
+	public static OSHNode get(long id, ByteBuffer bytes) throws IOException{
+		OSHNodeReader osh = new OSHNodeReader();
+		return osh.read(id, bytes);
+	}
 		
 	public OSHNodeReader read(long id, ByteBuffer bytes) throws IOException{
 		this.bytes = bytes;
@@ -49,8 +54,6 @@ public class OSHNodeReader extends OSHEntityReader implements OSHNode {
 			maxLongitude = maxLatitude = Long.MIN_VALUE;
 		}
 		
-
-		
 		readCommonEnvelope(header);
 		
 		backRefWays.clear();
@@ -61,8 +64,6 @@ public class OSHNodeReader extends OSHEntityReader implements OSHNode {
 		if((header & OSHDB.OSH_HEADER_NODE_BACKREF_REL) != 0){
 			readBackRef(backRefRelations);
 		}
-		
-
 		
 		versions = bytes.slice();
 		return this;
