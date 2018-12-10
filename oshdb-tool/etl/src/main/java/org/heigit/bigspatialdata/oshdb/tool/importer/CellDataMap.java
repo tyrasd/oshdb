@@ -122,7 +122,9 @@ public class CellDataMap implements CellDataSink {
 				final long cellId = entry.getLongKey();
 				final DataContainer container = entry.getValue();
 				final long rawSize = container.sizeInBytes;
-				
+				if(container.offsets.size() == 0){
+					continue;
+				}
 				out.writeLong(cellId);
 				out.writeInt(container.offsets.size());
 				out.writeInt((int)rawSize);

@@ -63,7 +63,7 @@ public class ReaderCellData implements Iterator<CellData>, Closeable{
 	}
 	
 	private CellData getNext() throws IOException{
-		if(size == 0 && data.available() > 0){
+		while(size == 0 && data.available() > 0){
 			zId = data.readLong();
 			size = data.readInt();
 			int rawSizeInBytes = data.readInt();

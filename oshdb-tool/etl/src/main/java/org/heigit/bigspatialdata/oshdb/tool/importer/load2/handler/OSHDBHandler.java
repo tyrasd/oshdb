@@ -25,12 +25,14 @@ import org.heigit.bigspatialdata.oshdb.osm.OSMNode;
 import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
 import org.heigit.bigspatialdata.oshdb.osm.OSMWay;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHRelation;
+import org.heigit.bigspatialdata.oshdb.tool.importer.load2.Debug;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHNode;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHWay;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
@@ -84,6 +86,9 @@ public abstract class OSHDBHandler implements Handler {
 		for (long id : relation.getNodeIds()) {
 			OSHNode node = nodes.get(id);
 			if (node == null) {
+				if(Debug.node == id){
+					System.out.println("missing node:"+id+" for rel:"+relation.getId());
+				}
 				missingNode(id);
 				continue;
 			}
@@ -93,6 +98,9 @@ public abstract class OSHDBHandler implements Handler {
 		for (long id : relation.getWayIds()) {
 			OSHWay way = ways.get(id);
 			if (way == null) {
+				if(Debug.way == id){
+					System.out.println("missing way:"+id+" for rel:"+relation.getId());
+				}
 				missingWay(id);
 				continue;
 			}
@@ -105,16 +113,7 @@ public abstract class OSHDBHandler implements Handler {
 		relationWays.clear();
 		return record;
 	}
-
-	private OSHRelation buildOSHRelation(TransformOSHRelation relation, Map<Long, OSHNode> nodes,
-			Map<Long, OSHWay> ways, long baseId, long baseTimestamp, long baseLongitude, long baseLatitude)
-			throws IOException {
-		ByteBuffer record = buildOSHRelationRecord(relation, nodes, ways, baseId, baseTimestamp, baseLongitude,
-				baseLatitude);
-		return OSHRelation.instance(record.array(), 0, record.limit(), baseId, baseTimestamp, baseLongitude,
-				baseLatitude);
-	}
-
+	
 	@Override
 	public void handleNodeGrid(long zId, List<TransformOSHNode> nodes) throws IOException {
 		if (zId < 0 || nodes.size() == 0)
@@ -158,26 +157,18 @@ public abstract class OSHDBHandler implements Handler {
 	}
 
 	@Override
-	public void handleWayGrid(long zId, List<TransformOSHWay> ways, List<TransformOSHNode> nodes) throws IOException {
+	public void handleWayGrid(long zId, List<TransformOSHWay> ways, Long2ObjectRBTreeMap<TransformOSHNode> nodeIdTransformNode) throws IOException {
 		if (zId < 0 || ways.size() == 0)
 			return;
-		// final int zoom = ZGrid.getZoom(zId);
-		// final XYGrid xyGrid = new XYGrid(zoom);
 
 		final long baseId = 0;
 		final long baseTimestamp = 0;
 		final OSHDBBoundingBox bbox = ZGrid.getBoundingBox(zId);
 		final long baseLongitude = bbox.getMinLonLong() + (bbox.getMaxLonLong() - bbox.getMinLonLong()) / 2;
 		final long baseLatitude = bbox.getMinLatLong() + (bbox.getMaxLatLong() - bbox.getMinLatLong()) / 2;
-		// final long xyId = xyGrid.getId(baseLongitude, baseLatitude);
 
-		final Map<Long, TransformOSHNode> nodeIdTransformNode = new HashMap<>(nodes.size());
-
-		final Map<Long, OSHNode> nodeIdOshMap = new HashMap<>(nodes.size());
-		for (TransformOSHNode node : nodes) {
-			nodeIdTransformNode.put(node.getId(), node);
-		}
-
+		final Map<Long, OSHNode> nodeIdOshMap = new HashMap<>(nodeIdTransformNode.size());
+		
 		Collections.sort(ways);
 
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -192,17 +183,23 @@ public abstract class OSHDBHandler implements Handler {
 			final TransformOSHWay way = itr.next();
 			wayNodes.ensureCapacity(way.getNodeIds().length);
 			for (long nodeId : way.getNodeIds()) {
+				if(nodeId == 5236808713L){
+					System.out.println("debug");
+				}
 				OSHNode osh = nodeIdOshMap.get(nodeId);
 				if (osh == null) {
 					TransformOSHNode node = nodeIdTransformNode.get(nodeId);
 					if (node != null) {
 						osh = buildOSHNode(node, 0, 0, 0, 0);
-						nodeIdOshMap.put(osh.getId(), osh);
+						nodeIdOshMap.put(nodeId, osh);
 					}
 				}
 				if (osh != null) {
 					wayNodes.add(osh);
 				} else {
+					if(Debug.node == nodeId){
+						System.out.println("missing node:"+nodeId +" for way:"+way.getId());
+					}
 					missingNode(nodeId);
 				}
 			}
@@ -221,36 +218,23 @@ public abstract class OSHDBHandler implements Handler {
 				out.reset();
 			}
 		}
-
+		
+		return;
 	}
 
 	@Override
-	public void handleRelationGrid(long zId, List<TransformOSHRelation> relations, List<TransformOSHNode> nodes,
-			List<TransformOSHWay> ways) throws IOException {
+	public void handleRelationGrid(long zId, List<TransformOSHRelation> relations, Long2ObjectRBTreeMap<TransformOSHNode> nodeIdTransformNode, Long2ObjectRBTreeMap<TransformOSHWay> wayIdTransformWay) throws IOException {
 		if (zId < 0 || relations.size() == 0)
 			return;
-
-		// final int zoom = ZGrid.getZoom(zId);
-		// final XYGrid xyGrid = new XYGrid(zoom);
 
 		final long baseId = 0;
 		final long baseTimestamp = 0;
 		final OSHDBBoundingBox bbox = ZGrid.getBoundingBox(zId);
 		final long baseLongitude = bbox.getMinLonLong() + (bbox.getMaxLonLong() - bbox.getMinLonLong()) / 2;
 		final long baseLatitude = bbox.getMinLatLong() + (bbox.getMaxLatLong() - bbox.getMinLatLong()) / 2;
-		// final long xyId = xyGrid.getId(baseLongitude, baseLatitude);
 
-		final Map<Long, TransformOSHNode> nodeIdTransformNode = new HashMap<>(nodes.size());
-		final Map<Long, OSHNode> nodeIdOshMap = new HashMap<>(nodes.size());
-		for (TransformOSHNode node : nodes) {
-			nodeIdTransformNode.put(node.getId(), node);
-		}
-
-		final Map<Long, TransformOSHWay> tWayIdOshMap = new HashMap<>(ways.size());
-		for (TransformOSHWay way : ways) {
-			tWayIdOshMap.put(way.getId(), way);
-		}
-
+		final Map<Long, OSHNode> nodeIdOshMap = new HashMap<>(nodeIdTransformNode.size());
+		
 		Collections.sort(relations);
 
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -265,7 +249,7 @@ public abstract class OSHDBHandler implements Handler {
 			final TransformOSHRelation relation = itr.next();
 			final Map<Long, OSHWay> wayIdOshMap = new HashMap<>(relation.getWayIds().length);
 			for (long wid : relation.getWayIds()) {
-				final TransformOSHWay way = tWayIdOshMap.get(wid);
+				final TransformOSHWay way = wayIdTransformWay.get(wid);
 				if (way != null) {
 					wayNodes.ensureCapacity(way.getNodeIds().length);
 					for (long nodeId : way.getNodeIds()) {
@@ -274,12 +258,15 @@ public abstract class OSHDBHandler implements Handler {
 							TransformOSHNode node = nodeIdTransformNode.get(nodeId);
 							if (node != null) {
 								osh = buildOSHNode(node, 0, 0, 0, 0);
-								nodeIdOshMap.put(osh.getId(), osh);
+								nodeIdOshMap.put(nodeId, osh);
 							}
 						}
 						if (osh != null) {
 							wayNodes.add(osh);
 						} else {
+							if(Debug.node == nodeId){
+								System.out.println("missing node:"+nodeId+" for way:"+wid+" for rel:"+relation.getId());
+							}
 							missingNode(nodeId);
 						}
 					}
@@ -288,7 +275,23 @@ public abstract class OSHDBHandler implements Handler {
 					wayNodes.clear();
 					wayIdOshMap.put(osh.getId(), osh);
 				}else{
+					if(Debug.way == wid){
+						System.out.println("missing way:"+wid+" for rel:"+relation.getId());
+					}
 					missingWay(wid);
+				}
+			}
+			for(long nid: relation.getNodeIds()){
+				if(!nodeIdOshMap.containsKey(Long.valueOf(nid))){
+					TransformOSHNode node = nodeIdTransformNode.get(nid);
+					if(node != null){
+						nodeIdOshMap.put(nid, buildOSHNode(node, 0, 0, 0, 0));
+					}else{
+						if(Debug.node == nid){
+							System.out.println("missing node:"+nid+" for rel:"+relation.getId());
+						}
+						missingNode(nid);
+					}
 				}
 			}
 

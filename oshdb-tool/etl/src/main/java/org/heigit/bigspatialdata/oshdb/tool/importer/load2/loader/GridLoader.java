@@ -42,7 +42,6 @@ public abstract class GridLoader extends OSHDBHandler {
 		long baseLatitude = bbox.getMinLatLong() + (bbox.getMaxLatLong() - bbox.getMinLatLong()) / 2;
 		long xyId = xyGrid.getId(baseLongitude, baseLatitude);
 		
-
 		handleWayGrid(new GridOSHWays(xyId, zoom, 0L, 0L, baseLongitude, baseLatitude, Arrays.copyOf(offsets, size), data),seq);
 	}
 
@@ -64,7 +63,7 @@ public abstract class GridLoader extends OSHDBHandler {
 	
 	@Override
 	public boolean loadNodeCondition(Grid grid) {
-		if ((grid.countNodes() > 1000 && grid.sizeNodes() >= 2L * MB) || grid.sizeNodes() >= 4L * MB) {
+		if ((grid.countNodes() > 1000 && grid.sizeNodes() >= 2L * MB) || (grid.countWays() >= 10 &&  grid.sizeNodes() >= 4L * MB)) {
 			return true;
 		}
 		return false;
@@ -72,7 +71,7 @@ public abstract class GridLoader extends OSHDBHandler {
 
 	@Override
 	public boolean loadWayCondition(Grid grid) {
-		long size = grid.sizeNodes() + grid.sizeRefNodes() + grid.sizeWays();
+		long size = grid.sizeNodes() + grid.sizeRefNodesWay() + grid.sizeWays();
 		if ((grid.countWays() > 1000 && size >= 2L * MB) || (grid.countWays() >= 10 && size >= 4L * MB)) {
 			return true;
 		}
@@ -81,7 +80,7 @@ public abstract class GridLoader extends OSHDBHandler {
 
 	@Override
 	public boolean loadRelCondition(Grid grid) {
-		long size = grid.size();
+		long size = grid.sizeRefRelWays() + grid.sizeRefNodesRel() + grid.sizeRelations();
 		if ((grid.countRelations() > 1000 && size >= 2L * MB) || (grid.countRelations() >= 10 && size >= 4L * MB)) {
 			return true;
 		}

@@ -180,6 +180,17 @@ public class H2Loader extends GridLoader implements Closeable {
 		// TODO Auto-generated method stub
 	}
 
+	private static PeekingIterator<CellBitmaps> merge(Path workDir, String glob) throws IOException {
+		List<ReaderBitmap> readers = Lists.newArrayList();
+		for (Path path : Files.newDirectoryStream(workDir, glob)) {
+			readers.add(new ReaderBitmap(path));
+		}
+		return Iterators.peekingIterator(Iterators.mergeSorted(readers, (a, b) -> {
+			int c = ZGrid.ORDER_DFS_TOP_DOWN.compare(a.cellId, b.cellId);
+			return c;
+		}));
+	}
+	
 	private static PeekingIterator<CellData> merge(Path workDir, OSMType type, String glob) throws IOException {
 		List<ReaderCellData> readers = Lists.newArrayList();
 		for (Path path : Files.newDirectoryStream(workDir, glob)) {
@@ -218,15 +229,8 @@ public class H2Loader extends GridLoader implements Closeable {
 
 		final Path workDir = config.workDir;
 
-		List<ReaderBitmap> readerBitmaps = Lists.newArrayList();
-		for (Path path : Files.newDirectoryStream(workDir, "transform_ref_*")) {
-			readerBitmaps.add(new ReaderBitmap(path));
-		}
-		PeekingIterator<CellBitmaps> bitmapReader = Iterators
-				.peekingIterator(Iterators.mergeSorted(readerBitmaps, (a, b) -> {
-					int c = ZGrid.ORDER_DFS_TOP_DOWN.compare(a.cellId, b.cellId);
-					return c;
-				}));
+		PeekingIterator<CellBitmaps> bitmapWayRefReader = merge(workDir, "transform_ref_way_*");		
+		PeekingIterator<CellBitmaps> bitmapRelRefReader = merge(workDir, "transform_ref_relation_*");
 
 		PeekingIterator<CellData> nodeReader = merge(workDir, OSMType.NODE, "transform_node_*");
 		PeekingIterator<CellData> wayReader = merge(workDir, OSMType.WAY, "transform_way_*");
@@ -243,9 +247,6 @@ public class H2Loader extends GridLoader implements Closeable {
 					return c;
 				}));
 
-		while (bitmapReader.hasNext() && bitmapReader.peek().cellId == -1) {
-			bitmapReader.next();
-		}
 		Stopwatch stopwatch = Stopwatch.createStarted();
 		System.out.println("skipping invalid entities ...");
 		while (entityReader.hasNext() && entityReader.peek().cellId == -1) {
@@ -255,7 +256,7 @@ public class H2Loader extends GridLoader implements Closeable {
 
 		final String oshdbPath = config.output.toString();
 		try (H2Loader handler = new H2Loader(oshdbPath)) {
-			LoaderGrid loader = new LoaderGrid(entityReader, bitmapReader, handler);
+			LoaderGrid loader = new LoaderGrid(entityReader, bitmapWayRefReader,bitmapRelRefReader, handler);
 			System.out.println("start loading ...");
 			stopwatch.reset().start();
 			loader.run();
