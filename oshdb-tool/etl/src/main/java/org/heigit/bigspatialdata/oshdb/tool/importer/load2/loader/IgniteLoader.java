@@ -43,14 +43,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
 
 public class IgniteLoader extends GridLoader implements Closeable {
-	
+
 	private final IgniteDataStreamer<Long, GridOSHNodes> nodeStream;
 	private final IgniteDataStreamer<Long, GridOSHWays> wayStream;
 	private final IgniteDataStreamer<Long, GridOSHRelations> relStream;
-	
+
 	public IgniteLoader(IgniteDataStreamer<Long, GridOSHNodes> nodeStream,
-			IgniteDataStreamer<Long, GridOSHWays> wayStream,
-			IgniteDataStreamer<Long, GridOSHRelations> relStream) {
+			IgniteDataStreamer<Long, GridOSHWays> wayStream, IgniteDataStreamer<Long, GridOSHRelations> relStream) {
 		this.nodeStream = nodeStream;
 		this.wayStream = wayStream;
 		this.relStream = relStream;
@@ -68,75 +67,77 @@ public class IgniteLoader extends GridLoader implements Closeable {
 	private long totalBytes = 0;
 	private long bytesSinceFlush = 0;
 	private long totalNodeBytes = 0;
-	
+
 	@Override
 	public void handleNodeGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
 		super.handleNodeGrid(zId, seq, offsets, size, data);
-		
-		long bytes = size*4 + data.length;
+
+		long bytes = size * 4 + data.length;
 		bytesSinceFlush += bytes;
 		totalBytes += bytes;
 		totalNodeBytes += bytes;
-		
+
 		System.out.printf("n %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId),
 				ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalNodeBytes), hRBC(totalBytes));
 	}
-	
+
 	@Override
 	public void handleNodeGrid(GridOSHNodes grid, int seq) {
 		final int level = grid.getLevel();
 		final long id = grid.getId();
-		
+
 		final long levelId = CellId.getLevelId(level, id);
 		nodeStream.addData(levelId, grid);
-		
-		if(bytesSinceFlush >= 1L*1024L*1024L*1024L){
+
+		if (bytesSinceFlush >= 1L * 1024L * 1024L * 1024L) {
 			nodeStream.flush();
 			bytesSinceFlush = 0;
-			
+
 		}
 	}
 
 	private long totalWayBytes = 0;
-	
+
 	@Override
 	public void handleWayGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
 		super.handleWayGrid(zId, seq, offsets, size, data);
-		
-		long bytes = size*4 + data.length;
+
+		long bytes = size * 4 + data.length;
 		bytesSinceFlush += bytes;
 		totalBytes += bytes;
 		totalWayBytes += bytes;
-		
-		System.out.printf("w %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId), ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalWayBytes), hRBC(totalBytes));
+
+		System.out.printf("w %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId),
+				ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalWayBytes), hRBC(totalBytes));
 
 	}
-	
+
 	@Override
 	public void handleWayGrid(GridOSHWays grid, int seq) {
 		final int level = grid.getLevel();
 		final long id = grid.getId();
-		
+
 		final long levelId = CellId.getLevelId(level, id);
 		wayStream.addData(levelId, grid);
-		
-		if(bytesSinceFlush >= 1L*1024L*1024L*1024L){
+
+		if (bytesSinceFlush >= 1L * 1024L * 1024L * 1024L) {
 			wayStream.flush();
 			bytesSinceFlush = 0;
 		}
 	}
-	
+
 	private long totalRelBytes = 0;
-	
+
 	@Override
 	public void handleRelationGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
 		super.handleWayGrid(zId, seq, offsets, size, data);
-		
-		long bytes = size*4 + data.length;
+
+		long bytes = size * 4 + data.length;
 		bytesSinceFlush += bytes;
 		totalBytes += bytes;
 		totalRelBytes += bytes;
-		System.out.printf("r %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId), ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalRelBytes), hRBC(totalBytes));
+		System.out.printf("r %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId),
+				ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalRelBytes), hRBC(totalBytes));
 
 	}
 
@@ -144,11 +145,11 @@ public class IgniteLoader extends GridLoader implements Closeable {
 	public void handleRelationGrid(GridOSHRelations grid, int seq) {
 		final int level = grid.getLevel();
 		final long id = grid.getId();
-		
+
 		final long levelId = CellId.getLevelId(level, id);
 		relStream.addData(levelId, grid);
-		
-		if(bytesSinceFlush >= 1L*1024L*1024L*1024L){
+
+		if (bytesSinceFlush >= 1L * 1024L * 1024L * 1024L) {
 			wayStream.flush();
 			bytesSinceFlush = 0;
 		}
@@ -196,7 +197,7 @@ public class IgniteLoader extends GridLoader implements Closeable {
 			return c;
 		}));
 	}
-	
+
 	private static PeekingIterator<CellData> merge(Path workDir, OSMType type, String glob) throws IOException {
 		List<ReaderCellData> readers = Lists.newArrayList();
 		for (Path path : Files.newDirectoryStream(workDir, glob)) {
@@ -239,13 +240,13 @@ public class IgniteLoader extends GridLoader implements Closeable {
 
 		final Path workDir = config.workDir;
 
-		PeekingIterator<CellBitmaps> bitmapWayRefReader = merge(workDir, "transform_ref_way_*");		
+		PeekingIterator<CellBitmaps> bitmapWayRefReader = merge(workDir, "transform_ref_way_*");
 		PeekingIterator<CellBitmaps> bitmapRelRefReader = merge(workDir, "transform_ref_relation_*");
 
 		PeekingIterator<CellData> nodeReader = merge(workDir, OSMType.NODE, "transform_node_*");
 		PeekingIterator<CellData> wayReader = merge(workDir, OSMType.WAY, "transform_way_*");
 		PeekingIterator<CellData> relReader = merge(workDir, OSMType.RELATION, "transform_relation_*");
-		
+
 		PeekingIterator<CellData> entityReader = Iterators
 				.peekingIterator(Iterators.mergeSorted(Lists.newArrayList(nodeReader, wayReader, relReader), (a, b) -> {
 					int c = ZGrid.ORDER_DFS_BOTTOM_UP.compare(a.cellId, b.cellId);
@@ -267,40 +268,40 @@ public class IgniteLoader extends GridLoader implements Closeable {
 
 		final File igniteXML = config.ignitexml;
 		final String prefix = config.prefix;
-		
+
 		Ignition.setClientMode(true);
 		IgniteConfiguration cfg = IgnitionEx.loadConfiguration(igniteXML.toString()).get1();
 		cfg.setIgniteInstanceName("IgniteImportClientInstance");
 
 		try (Ignite ignite = Ignition.start(cfg)) {
 			ignite.cluster().active(true);
-			
-		    try (IgniteDataStreamer<Long, GridOSHNodes> nodeStream = openStreamer(ignite, prefix+"_grid_node");
-		    	 IgniteDataStreamer<Long, GridOSHWays> wayStream = openStreamer(ignite, prefix+"_grid_way");
-		    	 IgniteDataStreamer<Long, GridOSHRelations> relStream = openStreamer(ignite, prefix+"_grid_relation");
-		    	 IgniteLoader handler = new IgniteLoader(nodeStream,wayStream,relStream)) {
+
+			try (IgniteDataStreamer<Long, GridOSHNodes> nodeStream = openStreamer(ignite, prefix + "_grid_node");
+					IgniteDataStreamer<Long, GridOSHWays> wayStream = openStreamer(ignite, prefix + "_grid_way");
+					IgniteDataStreamer<Long, GridOSHRelations> relStream = openStreamer(ignite,
+							prefix + "_grid_relation");
+					IgniteLoader handler = new IgniteLoader(nodeStream, wayStream, relStream)) {
 				LoaderGrid loader = new LoaderGrid(entityReader, bitmapWayRefReader, bitmapRelRefReader, handler);
 				System.out.println("start loading ...");
 				stopwatch.reset().start();
 				loader.run();
 				System.out.println(stopwatch);
+			} finally {
+				// deactive cluster after import, so that all caches get persist
+				ignite.cluster().active(false);
 			}
-		    
-		    //deactive  cluster after import, so that all caches get persist
-		    ignite.cluster().active(false);
 		}
 	}
-	
-	private static <T> IgniteDataStreamer<Long,T> openStreamer(Ignite ignite, String cacheName){
-	    CacheConfiguration<Long, T> cacheCfg = new CacheConfiguration<>(cacheName);
-	    cacheCfg.setBackups(0);
-	    cacheCfg.setCacheMode(CacheMode.PARTITIONED);
-	    
-	    IgniteCache<Long, T> cache = ignite.getOrCreateCache(cacheCfg);
-	    ignite.cluster().disableWal(cacheName);
 
-	    
-	    return ignite.dataStreamer(cache.getName());
+	private static <T> IgniteDataStreamer<Long, T> openStreamer(Ignite ignite, String cacheName) {
+		CacheConfiguration<Long, T> cacheCfg = new CacheConfiguration<>(cacheName);
+		cacheCfg.setBackups(0);
+		cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+
+		IgniteCache<Long, T> cache = ignite.getOrCreateCache(cacheCfg);
+		ignite.cluster().disableWal(cacheName);
+
+		return ignite.dataStreamer(cache.getName());
 	}
 
 }

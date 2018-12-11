@@ -151,6 +151,9 @@ public class LoaderGrid {
 		while (entityReader.hasNext()) {
 			long cellId = entityReader.peek().cellId;
 			final int zoom = ZGrid.getZoom(cellId);
+			if(zoom == 0){
+				cellId = 0;
+			}
 
 			loadLowerZoom(cellId);
 
@@ -169,14 +172,20 @@ public class LoaderGrid {
 
 			final Grid grid = getGrid(cellId);
 
-			while (entityReader.hasNext()
-					&& ZGrid.ORDER_DFS_BOTTOM_UP.compare(entityReader.peek().cellId, cellId) == 0) {
+			while (entityReader.hasNext()){
+				long peekCellId = entityReader.peek().cellId;
+				if(zoom == 0){
+					int peekZoom = ZGrid.getZoom(peekCellId);
+					if(peekZoom == 0){
+						peekCellId = 0;
+					}
+				}
+				if(ZGrid.ORDER_DFS_BOTTOM_UP.compare(entityReader.peek().cellId, cellId) != 0){
+					break;
+				}
+				
 				final CellData cellData = entityReader.next();
 				final byte[] data = cellData.bytes;
-
-				if (cellData.id == 5236808744L) {
-					System.out.println("debug");
-				}
 
 				switch (cellData.type) {
 
@@ -299,6 +308,8 @@ public class LoaderGrid {
 				return;
 			}
 			parentCellId = ZGrid.getParent(parentCellId);
+			if(zoom == 0)
+				return;
 			zoom--;
 		}
 	}
