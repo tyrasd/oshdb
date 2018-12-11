@@ -2,6 +2,8 @@ package org.heigit.bigspatialdata.oshdb.v0_6.transform;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -14,6 +16,7 @@ import java.util.function.ToIntFunction;
 
 import org.heigit.bigspatialdata.oshdb.v0_6.osm.OSMMember;
 import org.heigit.bigspatialdata.oshdb.v0_6.osm.OSMNode;
+import org.apache.orc.impl.SerializationUtils;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.v0_6.osm.OSMWay;
 import org.heigit.bigspatialdata.oshdb.v0_6.transform.rx.Block;
@@ -28,6 +31,7 @@ import org.heigit.bigspatialdata.oshdb.v0_6.impl.osh.OSHWayReader;
 import org.heigit.bigspatialdata.oshdb.v0_6.impl.osm.OSMWayImpl;
 import org.heigit.bigspatialdata.oshdb.v0_6.util.LongKeyValueSink;
 import org.heigit.bigspatialdata.oshdb.v0_6.util.backref.RefToBackRefs;
+import org.heigit.bigspatialdata.oshdb.v0_6.util.io.ByteBufferBackedInputStream;
 import org.heigit.bigspatialdata.oshdb.v0_6.util.io.BytesSink;
 import org.heigit.bigspatialdata.oshdb.v0_6.util.io.BytesSource;
 import org.heigit.bigspatialdata.oshdb.v0_6.util.io.OSHGridSort;
@@ -44,7 +48,9 @@ import com.google.common.cache.Weigher;
 import com.google.common.collect.PeekingIterator;
 
 import io.reactivex.Flowable;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -55,14 +61,14 @@ public class TransformerWay extends Transformer {
 
 	private final BytesSink store;
 	private final BytesSource nodeSource;
-	private final LongKeyValueSink sort;
+	private final OSHGridSort sort;
 	private final PeekingIterator<RefToBackRefs> backRefsRelations;
 	private final LoadingCache<Long, ByteBuffer> nodeCache;
 
 	private final ObjectArrayList<OSMWay> versions = new ObjectArrayList<>();	
 	private final OSHWaySerializer oshSerializer = new OSHWaySerializer(); 
 
-	public TransformerWay(TagToIdMapper tagToId, BytesSink store, BytesSource nodeSource, PeekingIterator<RefToBackRefs> backRefsRelations, LongKeyValueSink sort) {
+	public TransformerWay(TagToIdMapper tagToId, BytesSink store, BytesSource nodeSource, PeekingIterator<RefToBackRefs> backRefsRelations, OSHGridSort sort) {
 		super(tagToId);
 		this.store = store;
 		this.nodeSource = nodeSource;
@@ -85,6 +91,11 @@ public class TransformerWay extends Transformer {
 				});
 	}
 	
+	private final OSHNodeReader oshNode = new OSHNodeReader();
+	private final FastByteArrayOutputStream aux = new FastByteArrayOutputStream(8192);
+	private final WritableByteChannel channel = Channels.newChannel(aux);
+	private final LongArrayList memberOffsets = new LongArrayList();
+	
 	@Override
 	protected void transformEntities(long id, OSMType type, List<Entity> entities,Block block) {		
 		oshSerializer.reset();
@@ -105,7 +116,32 @@ public class TransformerWay extends Transformer {
 		
 		try {
 			out.reset();
-			oshSerializer.serialize(out, versions,nodeCache);
+			
+			long minLongitude, minLatitude, maxLongitude, maxLatitude;
+			minLongitude = minLatitude = Long.MAX_VALUE;
+			maxLongitude = maxLatitude = Long.MIN_VALUE;
+			
+			aux.reset();
+			memberOffsets.clear();
+			for(OSMMember m : oshSerializer.getMembers()){
+				long mId = m.getId();
+				ByteBuffer bytes;
+				try {
+					bytes = nodeCache.get(mId);
+				} catch (ExecutionException e) {
+					throw new IOException(e);
+				}
+				channel.write(bytes);
+				bytes.rewind();
+				oshNode.read(mId, bytes);
+				minLongitude = Math.min(minLongitude, oshNode.getMinLongitude());
+				minLatitude = Math.min(minLatitude, oshNode.getMinLatitude());
+				maxLongitude = Math.max(maxLongitude, oshNode.getMaxLongitude());
+				maxLatitude = Math.max(maxLatitude, oshNode.getMaxLatitude());
+			}
+			serUtil.writeVulong(out, aux.length());
+			out.write(aux.array, 0, aux.length);
+			oshSerializer.serialize(out, versions,minLongitude,minLatitude,maxLongitude,maxLatitude,memberOffsets,relations);
 			ByteBuffer bytes = ByteBuffer.wrap(out.array, 0, out.length);
 
 			if(!check(versions, id, bytes)){
@@ -131,9 +167,14 @@ public class TransformerWay extends Transformer {
 		versions.clear();
 	}
 	
+	private final ByteBufferBackedInputStream byteBufferInput = new ByteBufferBackedInputStream();
 	private boolean check(List<OSMWay> versions, long id, ByteBuffer bytes) throws IOException{
 		OSHWayReader reader = new OSHWayReader();
-		reader.read(id, bytes);
+		byteBufferInput.set(bytes);
+		int nodeLength = (int) SerializationUtils.readVulong(byteBufferInput);
+		ByteBuffer nodes = bytes.slice();
+		bytes.position(bytes.position() + nodeLength);
+		reader.read(id, bytes, nodes);
 
 		boolean check = true;
 		Iterator<OSMWay> expectedItr = versions.iterator();

@@ -1,6 +1,7 @@
-package org.heigit.bigspatialdata.oshdb.v0_6.transform;
+ package org.heigit.bigspatialdata.oshdb.v0_6.transform;
 
 import java.io.BufferedOutputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -21,11 +22,13 @@ import org.heigit.bigspatialdata.oshdb.tool.importer.transform.TransformerTagRol
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagId;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagToIdMapper;
 import org.heigit.bigspatialdata.oshdb.v0_6.transform.rx.Block;
+import org.heigit.bigspatialdata.oshdb.v0_6.util.LongKeyValueSink;
 import org.heigit.bigspatialdata.oshdb.v0_6.util.backref.BackRefReader;
 import org.heigit.bigspatialdata.oshdb.v0_6.util.backref.RefToBackRefs;
 import org.heigit.bigspatialdata.oshdb.v0_6.util.io.BytesSink;
 import org.heigit.bigspatialdata.oshdb.v0_6.util.io.BytesSource;
 import org.heigit.bigspatialdata.oshdb.v0_6.util.io.FullIndexByteStore;
+import org.heigit.bigspatialdata.oshdb.v0_6.util.io.FullIndexStore;
 import org.heigit.bigspatialdata.oshdb.v0_6.util.io.OSHGridSort;
 import org.heigit.bigspatialdata.oshpbf.parser.pbf.BlobReader;
 import org.heigit.bigspatialdata.oshpbf.parser.pbf.BlobToOSHIterator;
@@ -125,17 +128,40 @@ public class TransformMain {
 		System.out.print("loading keytables ... ");
 		Stopwatch stopwatch = Stopwatch.createStarted();
 		final TagToIdMapper tagToId;
-		tagToId  = TransformerTagRoles.getTagToIdMapper(workDir);
-	
+//		tagToId  =  TransformerTagRoles.getTagToIdMapper(workDir);
 		
-
+		tagToId = new TagToIdMapper() {
+			Map<String, Integer> tags = new HashMap<>();
+			
+			@Override
+			public int getValue(int key, String value) {
+				return tags.computeIfAbsent(value, i -> tags.size());
+			}
+			
+			@Override
+			public TagId getTag(String key, String value) {
+				int k = getKey(key);
+				int v = getValue(k, value);
+				return TagId.of(k, v);
+			}
+			
+			@Override
+			public int getKey(String key) {
+				return tags.computeIfAbsent(key, i -> tags.size());
+			}
+			
+			@Override
+			public long estimatedSize() {
+				// TODO Auto-generated method stub
+				return 0;
+			}
+		};
+	
 		System.out.println(stopwatch);
-
-		try (OutputStream indexOut = new BufferedOutputStream(
-				new FileOutputStream(workDir.resolve(prefix + ".index").toFile()));
-				OutputStream dataOut = new BufferedOutputStream(new FileOutputStream(workDir.resolve(prefix + ".data").toFile()));
-				OSHGridSort sort = new OSHGridSort(250_000_000, workDir.resolve(prefix + ".grid").toString());
-				BytesSink store = FullIndexByteStore.getSink(workDir.resolve(prefix).toString())) {
+		final String path = workDir.resolve(prefix).toString();
+		try ( BytesSink store = FullIndexByteStore.getSink(path);
+			  //LongKeyValueSink sort = FullIndexStore.sink(path + ".grid");
+			  OSHGridSort sort = new OSHGridSort(250_000_000, workDir.resolve(prefix + ".grid").toString());) {
 			
 			final long start;
 			final long end;
@@ -165,10 +191,14 @@ public class TransformMain {
 
 			Flowable<PbfBlob> blobFlow = read(pbf, start, end, end, 0);
 			Flowable<BlobToOSHIterator> blockFlow = decompress(blobFlow);
-			Flowable<Block> oshFlow = extract(blockFlow.limit(1_000));
+			Flowable<Block> oshFlow = extract(blockFlow);
 			
 			subscribe(oshFlow, transformer::transform, (e) -> e.printStackTrace(), transformer::complete, 1);
 		}
+	}
+	
+	private static OutputStream bufferedOutputStream(String path) throws FileNotFoundException{
+		return new BufferedOutputStream(new FileOutputStream(path));
 	}
 
 	private static <T extends Comparable<T>> PeekingIterator<T> merge(Path workDir, String glob, Function<Path,Iterator<T>> get) throws IOException {
