@@ -52,8 +52,8 @@ public class LoadKeyVaules implements Closeable {
 
 	private void prepareTags(Connection conn) throws SQLException {
 		try (Statement stmt = conn.createStatement()) {
-			stmt.executeUpdate("drop table if exists " + TABLE_ROLE + "; create table if not exists " + TABLE_ROLE
-					+ "(id int primary key, txt varchar)");
+			stmt.executeUpdate("drop table if exists " + TABLE_KEY + "; create table if not exists "+ TABLE_KEY + "(id int primary key, txt varchar)");
+			stmt.executeUpdate("drop table if exists " + TABLE_KEYVALUE + "; create table if not exists " + TABLE_KEYVALUE + "(keyId int, valueId int, txt varchar, primary key (keyId,valueId))");
 		}
 	}
 
