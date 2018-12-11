@@ -120,7 +120,7 @@ public class LoadKeyVaules implements Closeable {
 							batch++;
 
 							if (batch >= MAX_BATCH_SIZE) {
-								// insertValue.executeBatch();
+								insertValue.executeBatch();
 								batch = 0;
 							}
 						}
