@@ -61,7 +61,7 @@ public class IgniteLoader extends GridLoader implements Closeable {
 			return bytes + " B";
 		int exp = (int) (Math.log(bytes) / Math.log(unit));
 		final String pre = "" + "kMGTPE".charAt(exp - 1);
-		return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
+		return String.format("%.1f,%sB", bytes / Math.pow(unit, exp), pre);
 	}
 
 	private long totalBytes = 0;
@@ -77,7 +77,7 @@ public class IgniteLoader extends GridLoader implements Closeable {
 		totalBytes += bytes;
 		totalNodeBytes += bytes;
 
-		System.out.printf("n %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId),
+		System.out.printf("n,%2d,%8d,%3d,%4d,%10s,%10s,%10s%n", ZGrid.getZoom(zId),
 				ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalNodeBytes), hRBC(totalBytes));
 	}
 
@@ -107,7 +107,7 @@ public class IgniteLoader extends GridLoader implements Closeable {
 		totalBytes += bytes;
 		totalWayBytes += bytes;
 
-		System.out.printf("w %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId),
+		System.out.printf("w,%2d,%8d,%3d,%4d,%10s,%10s,%10s%n", ZGrid.getZoom(zId),
 				ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalWayBytes), hRBC(totalBytes));
 
 	}
@@ -117,7 +117,7 @@ public class IgniteLoader extends GridLoader implements Closeable {
 		final int level = grid.getLevel();
 		final long id = grid.getId();
 
-		final long levelId = CellId.getLevelId(level, id);
+		final long levelId = CellId.getLevelId(seq,level, id);
 		wayStream.addData(levelId, grid);
 
 		if (bytesSinceFlush >= 1L * 1024L * 1024L * 1024L) {
@@ -136,8 +136,7 @@ public class IgniteLoader extends GridLoader implements Closeable {
 		bytesSinceFlush += bytes;
 		totalBytes += bytes;
 		totalRelBytes += bytes;
-		System.out.printf("r %2d:%8d (%3d)[c:%4d] -> b:%10s - tN:%10s - t:%10s%n", ZGrid.getZoom(zId),
-				ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalRelBytes), hRBC(totalBytes));
+		System.out.printf("r,%2d,%8d,%3d,%4d,%10s,%10s,%10s%n", ZGrid.getZoom(zId),ZGrid.getIdWithoutZoom(zId), seq, size, hRBC(bytes), hRBC(totalRelBytes), hRBC(totalBytes));
 
 	}
 
@@ -146,7 +145,7 @@ public class IgniteLoader extends GridLoader implements Closeable {
 		final int level = grid.getLevel();
 		final long id = grid.getId();
 
-		final long levelId = CellId.getLevelId(level, id);
+		final long levelId = CellId.getLevelId(seq,level, id);
 		relStream.addData(levelId, grid);
 
 		if (bytesSinceFlush >= 1L * 1024L * 1024L * 1024L) {
@@ -288,6 +287,7 @@ public class IgniteLoader extends GridLoader implements Closeable {
 				System.out.println(stopwatch);
 			} finally {
 				// deactive cluster after import, so that all caches get persist
+				System.out.println("deactive cluster");
 				ignite.cluster().active(false);
 			}
 		}
@@ -297,10 +297,9 @@ public class IgniteLoader extends GridLoader implements Closeable {
 		CacheConfiguration<Long, T> cacheCfg = new CacheConfiguration<>(cacheName);
 		cacheCfg.setBackups(0);
 		cacheCfg.setCacheMode(CacheMode.PARTITIONED);
-
+		
 		IgniteCache<Long, T> cache = ignite.getOrCreateCache(cacheCfg);
 		ignite.cluster().disableWal(cacheName);
-
 		return ignite.dataStreamer(cache.getName());
 	}
 

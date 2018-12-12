@@ -319,14 +319,10 @@ public class LoaderGrid {
 		Grid grid = entityGrid[zoom];
 		if (grid == null) {
 			grid = new Grid();
-			grid.cellId = cellId;
+			grid.cellId = (zoom > 0)?cellId:0;
 			entityGrid[zoom] = grid;
 		}
 
-		if (grid.cellId != cellId) {
-			System.err.println("getGrid " + grid.cellId + " != " + cellId);
-			System.exit(2);
-		}
 		return grid;
 	}
 
