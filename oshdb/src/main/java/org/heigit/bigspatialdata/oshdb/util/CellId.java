@@ -33,6 +33,10 @@ public class CellId implements Serializable {
     this.id = id;
   }
 
+  public static long getLevelId(int seq, int zoomlevel, long id){
+	  return ((long)(seq & 15)) << 60 | ((long) (zoomlevel & 15)) << 56 | id;
+  }
+  
   public static long getLevelId(int zoomlevel, long id) {
     return ((long) zoomlevel) << 56 | id;
   }
