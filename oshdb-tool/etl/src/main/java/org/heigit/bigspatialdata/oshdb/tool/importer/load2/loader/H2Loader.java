@@ -10,6 +10,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Iterator;
 import java.util.List;
 
 import org.heigit.bigspatialdata.oshdb.TableNames;
@@ -17,7 +18,12 @@ import org.heigit.bigspatialdata.oshdb.grid.GridOSHNodes;
 import org.heigit.bigspatialdata.oshdb.grid.GridOSHRelations;
 import org.heigit.bigspatialdata.oshdb.grid.GridOSHWays;
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
+import org.heigit.bigspatialdata.oshdb.osh.OSHNode;
+import org.heigit.bigspatialdata.oshdb.osh.OSHWay;
+import org.heigit.bigspatialdata.oshdb.osm.OSMMember;
+import org.heigit.bigspatialdata.oshdb.osm.OSMNode;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
+import org.heigit.bigspatialdata.oshdb.osm.OSMWay;
 import org.heigit.bigspatialdata.oshdb.tool.importer.cli.validator.DirExistValidator;
 import org.heigit.bigspatialdata.oshdb.tool.importer.load2.CellBitmaps;
 import org.heigit.bigspatialdata.oshdb.tool.importer.load2.CellData;
@@ -104,7 +110,7 @@ public class H2Loader extends GridLoader implements Closeable {
 
 	@Override
 	public void handleWayGrid(GridOSHWays grid, int seq) {
-		try {
+		try {			
 			out.reset();
 			try (ObjectOutputStream oos = new ObjectOutputStream(out)) {
 				oos.writeObject(grid);

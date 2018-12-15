@@ -141,8 +141,7 @@ public abstract class OSHDBHandler implements Handler {
 		int seq = 0;
 		while (itr.hasNext()) {
 			TransformOSHNode node = itr.next();
-			ByteBuffer record = OSHNode.buildRecord(node.getId(), node, baseId, baseTimestamp, baseLongitude,
-					baseLatitude);
+			ByteBuffer record = OSHNode.buildRecord(node.getId(), node, baseId, baseTimestamp, baseLongitude,baseLatitude);
 			offsets[size++] = offset;
 			out.write(record.array(), 0, record.limit());
 			offset += record.limit();
@@ -203,8 +202,7 @@ public abstract class OSHDBHandler implements Handler {
 					missingNode(nodeId);
 				}
 			}
-			final ByteBuffer record = buildOSHWayRecord(way, wayNodes, baseId, baseTimestamp, baseLongitude,
-					baseLatitude);
+			final ByteBuffer record = buildOSHWayRecord(way, wayNodes, baseId, baseTimestamp, baseLongitude,baseLatitude);
 			wayNodes.clear();
 
 			offsets[size++] = offset;
