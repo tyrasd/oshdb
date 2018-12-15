@@ -82,9 +82,9 @@ public abstract class TransformReader<T extends OSHEntity2> {
     channel.read(data, pos);
     data.flip();
     
-    final OSHDBBoundingBox bbox = ZGrid.getBoundingBox(cellId);
-    final long baseLongitude = bbox.getMinLonLong();
-    final long baseLatitude = bbox.getMinLatLong();
+//    final OSHDBBoundingBox bbox = ZGrid.getBoundingBox(cellId);
+    final long baseLongitude = 0; // bbox.getMinLonLong();
+    final long baseLatitude = 0; //bbox.getMinLatLong();
     
     final Set<T> ret = new TreeSet<>((a,b) -> Long.compare(a.getId(), b.getId()));
     long id = 0;

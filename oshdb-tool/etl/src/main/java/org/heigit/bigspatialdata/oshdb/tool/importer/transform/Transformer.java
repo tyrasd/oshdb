@@ -145,9 +145,9 @@ public abstract class Transformer {
 		return grid.getIdSingleZIdWithZoom(longitude, latitude);
 	}
 
-	protected OSHDBBoundingBox getCellBounce(long cellId) {
-		return ZGrid.getBoundingBox(cellId);
-	}
+//	protected OSHDBBoundingBox getCellBounce(long cellId) {
+//		return ZGrid.getBoundingBox(cellId);
+//	}
 
 	protected static long findBestFittingCellId(Set<Long> cellIds) {
 		if (cellIds.isEmpty())
@@ -190,14 +190,14 @@ public abstract class Transformer {
 	}
 
 	protected void store(long cellId, long id, LongFunction<ByteBuffer> data, LongSet nodes, LongSet ways, LongSet relation) {
-		try {
-			cellDataMap.add(cellId, id,data);
-			if(cellRefMap != null && (nodes != null || ways != null)){
-				cellRefMap.add(cellId, nodes, ways);
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+//		try {
+//			cellDataMap.add(cellId, id,data);
+//			if(cellRefMap != null && (nodes != null || ways != null)){
+//				cellRefMap.add(cellId, nodes, ways);
+//			}
+//		} catch (IOException e) {
+//			throw new RuntimeException(e);
+//		}
 	}
 
 	public abstract void transform(long id, List<Entity> versions);

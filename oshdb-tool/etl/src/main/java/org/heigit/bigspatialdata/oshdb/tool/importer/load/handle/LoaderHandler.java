@@ -1,5 +1,6 @@
 package org.heigit.bigspatialdata.oshdb.tool.importer.load.handle;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
@@ -38,6 +39,12 @@ public class LoaderHandler implements LoaderKeyTables.Handler, LoaderNode.Handle
 	@Override
 	public void loadKeyValuesInit(int numberKeysToLoad) {
 		// TODO Auto-generated method stub		
+	}
+
+	@Override
+	public void loadMeta(String key, String value) throws IOException {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

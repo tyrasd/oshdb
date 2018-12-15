@@ -13,7 +13,8 @@ public class ZGrid {
   private static long ZOOM_FACTOR = 1L << 56;
   private static long ID_MASK = 0x00FFFFFFFFFFFFFFL;
 
-  private static final long space = (long) (360.0 * OSHDB.GEOM_PRECISION_TO_LONG);
+  private static final double space = (360.0 * OSHDB.GEOM_PRECISION_TO_LONG);
+  private static final double epsilon = 0.1;
   private final int maxZoom;
   private static final OSHDBBoundingBox zeroBoundingBox = new OSHDBBoundingBox(0, 0, 0, 0);
 
@@ -52,14 +53,33 @@ public class ZGrid {
     }
 
     int zoom = Math.min(optimalZoom(maxLon - minLon), optimalZoom(maxLat - minLat));
+    if(zoom == 0)
+    	return 0;
+    
     long zoomPow = (long) Math.pow(2, zoom);
-
+    
     while (zoom > 0) {
-      long cellWidth = space / zoomPow;
-      x[0] = minLon / cellWidth;
-      x[1] = maxLon / cellWidth;
-      y[0] = minLat / cellWidth;
-      y[1] = maxLat / cellWidth;
+      double cellWidth = space / zoomPow;
+      
+      if(minLon == maxLon){
+    	  x[0] = x[1] = (long) ((minLon - epsilon)/cellWidth);
+      }else{
+    	  x[0] = (long) (minLon / cellWidth);
+    	  x[1] = (long) ((maxLon - epsilon) / cellWidth);
+    	  
+      }
+      if(minLat == maxLat){
+    	  y[0] = y[1] = (long) ((minLat - epsilon)/cellWidth);
+      }else{
+    	  y[0] = (long) (minLat / cellWidth);
+    	  y[1] = (long) ((maxLat - epsilon) / cellWidth);
+    	  
+      }
+      
+//      x[0] = (long) ((minLon - epsilon) / cellWidth);
+//      x[1] = (long) ((maxLon - epsilon) / cellWidth);
+//      y[0] = (long) ((minLat - epsilon) / cellWidth);
+//      y[1] = (long) ((maxLat - epsilon) / cellWidth);
 
       if (x[0] == x[1] && y[0] == y[1]) {
         break;
@@ -112,36 +132,37 @@ public class ZGrid {
     return 0;
   }
 
-  public Iterable<Long> iterableDF(OSHDBBoundingBox search) {
-    final ZGrid zGrid = this;
-    return new Iterable<Long>() {
-      final ZGrid grid = zGrid;
+//  public Iterable<Long> iterableDF(OSHDBBoundingBox search) {
+//    final ZGrid zGrid = this;
+//    return new Iterable<Long>() {
+//      final ZGrid grid = zGrid;
+//
+//      @Override
+//      public Iterator<Long> iterator() {
+//        return grid.iteratorDF(search);
+//      }
+//    };
+//  }
 
-      @Override
-      public Iterator<Long> iterator() {
-        return grid.iteratorDF(search);
-      }
-    };
-  }
+//  public Iterator<Long> iteratorDF(OSHDBBoundingBox search) {
+//    return new DFIterator(search, maxZoom, space);
+//  }
 
-  public Iterator<Long> iteratorDF(OSHDBBoundingBox search) {
-    return new DFIterator(search, maxZoom, space);
-  }
-
+  
   public static OSHDBBoundingBox getBoundingBox(long zId) {
     if (zId < 0) {
       return zeroBoundingBox;
     }
     final long id = getIdWithoutZoom(zId);
     final int zoom = getZoom(zId);
-    final long cellWidth = space / (long) Math.pow(2, zoom);
+    final double cellWidth = space / Math.pow(2, zoom);
 
     long[] xy = getXY(id);
 
-    final long minLon = denormalizeLon(xy[0] * cellWidth);
-    final long maxLon = minLon + cellWidth - 1;
-    final long minLat = denormalizeLat(xy[1] * cellWidth);
-    final long maxLat = minLat + cellWidth - 1;
+    final long minLon = denormalizeLon((long) (xy[0] * cellWidth));
+    final long maxLon = (long) (minLon + cellWidth - 1);
+    final long minLat = denormalizeLat((long) (xy[1] * cellWidth));
+    final long maxLat = (long) (minLat + cellWidth - 1);
 
     return new OSHDBBoundingBox(minLon, minLat, maxLon, maxLat);
   }
@@ -159,7 +180,7 @@ public class ZGrid {
     if (delta == 0) {
       return maxZoom;
     }
-    return Math.min(63 - Long.numberOfLeadingZeros((space / (delta))), maxZoom);
+    return Math.min(63 - Long.numberOfLeadingZeros((long) (space / (delta))), maxZoom);
   }
 
   private static long morton(long x, long y) {
@@ -385,4 +406,20 @@ public class ZGrid {
       private boolean complete = false;
     }
   }
+  
+  public static void main(String[] args) {
+	ZGrid zGrid = new ZGrid(15);
+	
+	long minLon = (long) (-180.0 * OSHDB.GEOM_PRECISION_TO_LONG);
+	long minLat = (long) (-90.0 * OSHDB.GEOM_PRECISION_TO_LONG);
+	
+	long maxLon = minLon;
+	long maxLat = minLat;
+	
+	long zId = zGrid.getIdSingleZIdWithZoom(minLon, maxLon, minLat, maxLat);
+	
+	System.out.printf("%2d:%d%n",ZGrid.getZoom(zId),ZGrid.getIdWithoutZoom(zId));
+	
+	
+}
 }
