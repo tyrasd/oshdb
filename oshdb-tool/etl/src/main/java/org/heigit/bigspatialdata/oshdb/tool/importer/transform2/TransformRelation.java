@@ -14,6 +14,7 @@ import org.heigit.bigspatialdata.oshdb.tool.importer.extract.Extract;
 import org.heigit.bigspatialdata.oshdb.tool.importer.extract.data.OsmPbfMeta;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHRelation;
 import org.heigit.bigspatialdata.oshdb.tool.importer.transform2.Transform.Args;
+import org.heigit.bigspatialdata.oshdb.tool.importer.util.RoleToIdMapper;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagToIdMapper;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.cellmapping.CellDataSink;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.cellmapping.CellRefSink;
@@ -44,8 +45,8 @@ public class TransformRelation extends Transformer {
 	private final ByteArrayOutputWrapper baRecord = new ByteArrayOutputWrapper(1024);
 	private final ByteArrayOutputWrapper baAux = new ByteArrayOutputWrapper(1024);
 	
-	public TransformRelation(TagToIdMapper tagToId, CellDataSink cellDataMap, CellDataSink nonSimpleRelSink, IdToCellSink idToCellSink, IdToCellSource nodeToCell, IdToCellSource wayToCell, CellRefSink cellRefMap) {
-			super(tagToId, cellDataMap, idToCellSink);
+	public TransformRelation(TagToIdMapper tagToId, RoleToIdMapper roleToId, CellDataSink cellDataMap, CellDataSink nonSimpleRelSink, IdToCellSink idToCellSink, IdToCellSource nodeToCell, IdToCellSource wayToCell, CellRefSink cellRefMap) {
+			super(tagToId, roleToId, cellDataMap, idToCellSink);
 		this.nonSimpleRelSink = nonSimpleRelSink;
 		this.nodeToCell = nodeToCell;
 		this.wayToCell = wayToCell;
@@ -133,7 +134,7 @@ public class TransformRelation extends Transformer {
 		return id;
 	}
 	
-	public static void transform(Args args, TagToIdMapper tagToId, CellDataSink cellDataSink, CellDataSink nonSimpleRelSink, CellRefSink cellRefSink,
+	public static void transform(Args args, TagToIdMapper tagToId,RoleToIdMapper roleToId, CellDataSink cellDataSink, CellDataSink nonSimpleRelSink, CellRefSink cellRefSink,
 			IdToCellSink idToCellSink, IdToCellSource nodeToCellSource, IdToCellSource wayToCellSource) throws IOException {
 		Path pbf = args.pbf;
 
@@ -161,7 +162,7 @@ public class TransformRelation extends Transformer {
 		}
 
 		final Transform transform = Transform.of(pbf, chunkStart, chunkEnd, end, workerId);
-		final TransformRelation tw = new TransformRelation(tagToId, cellDataSink, nonSimpleRelSink, idToCellSink, nodeToCellSource, wayToCellSource, cellRefSink);
+		final TransformRelation tw = new TransformRelation(tagToId, roleToId, cellDataSink, nonSimpleRelSink, idToCellSink, nodeToCellSource, wayToCellSource, cellRefSink);
 		final Stopwatch stopwatch = Stopwatch.createStarted();
 		transform.transform(tw, () -> {
 			System.out.println("complete!");

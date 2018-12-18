@@ -12,6 +12,7 @@ import java.util.Map;
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.heigit.bigspatialdata.oshdb.tool.importer.transform.TransformerTagRoles;
 import org.heigit.bigspatialdata.oshdb.tool.importer.transform2.Transform;
+import org.heigit.bigspatialdata.oshdb.tool.importer.util.RoleToIdMapper;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.SizeEstimator;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.TagToIdMapper;
 import org.heigit.bigspatialdata.oshdb.tool.importer.util.cellmapping.CellDataSink;
@@ -154,6 +155,7 @@ public class TransformMain {
 			break;
 		}
 		case Relation: {
+			RoleToIdMapper roleToId = TransformerTagRoles.getRoleToIdMapper(workDir);
 			final Path id2CellPath = workDir.resolve(String.format("transform_id2cell_relation_%02d", workerId));
 			final long refMemory = 2L * 1024 * 1024 * 1024;
 			try (CellDataSink cellDataSink = new CellDataMap(workDir, String.format("transform_relation_%02d", workerId),(availableHeapMemory / 2) - refMemory);
@@ -180,7 +182,7 @@ public class TransformMain {
 					IdToCellSource nodeToCellSource = PlainIdToCellSource.get(workDir, "transform_id2cell_node_*.idx", mappedBuffer);
 					IdToCellSource wayToCellSource = PlainIdToCellSource.get(workDir, "transform_id2cell_way_*.idx", mappedBuffer);
 					
-					TransformRelation.transform(config.transformArgs, tagToId, cellDataSink,nonSimpleRelSink, cellRefSink, idToCellSink, nodeToCellSource, wayToCellSource);
+					TransformRelation.transform(config.transformArgs, tagToId, roleToId, cellDataSink,nonSimpleRelSink, cellRefSink, idToCellSink, nodeToCellSource, wayToCellSource);
 				}
 
 			} catch (IOException e) {
