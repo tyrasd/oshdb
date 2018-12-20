@@ -107,7 +107,7 @@ public class OSHDB2Ignite {
           final long levelId = CellId.getLevelId(seq,level,id);
 
           final ObjectInputStream ois = new ObjectInputStream(rst.getBinaryStream(4));
-//          System.out.printf("level:%d, id:%d -> LevelId:%16s%n", level, id, Long.toHexString(levelId));
+          System.out.printf("level:%d, seq:%d, id:%d%n", level, seq, id);
           @SuppressWarnings("unchecked")
           final T grid = (T) ois.readObject();
           streamer.addData(levelId, grid);
