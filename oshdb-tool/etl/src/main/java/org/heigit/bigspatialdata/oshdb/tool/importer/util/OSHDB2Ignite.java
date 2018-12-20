@@ -65,20 +65,29 @@ public class OSHDB2Ignite {
       
       //deactive  cluster after import, so that all caches get persist
       ignite.cluster().active(false);
-
+      ignite.cluster().active(true);
     }
 
   }
 
   private static <T> void doGridImport(Ignite ignite, Statement stmt, TableNames cacheName, String prefix) {
     final String cacheWithPrefix = cacheName.toString(prefix);
+    ignite.destroyCache(cacheWithPrefix);
+    
     CacheConfiguration<Long, T> cacheCfg = new CacheConfiguration<>(cacheWithPrefix);
     cacheCfg.setBackups(0);
     cacheCfg.setCacheMode(CacheMode.PARTITIONED);
     
-    ignite.cluster().disableWal(cacheWithPrefix);
-
+    
+    
     IgniteCache<Long, T> cache = ignite.getOrCreateCache(cacheCfg);
+    
+    cache.clear();
+    
+    ignite.cluster().disableWal(cacheWithPrefix);
+    cache.clear();
+
+    
     try (IgniteDataStreamer<Long, T> streamer = ignite.dataStreamer(cache.getName())) {
       streamer.allowOverwrite(true);
       String tableName = null;
@@ -92,29 +101,29 @@ public class OSHDB2Ignite {
         case T_RELATIONS:
           tableName = TableNames.T_RELATIONS.toString();
       }
-      try (final ResultSet rst = stmt.executeQuery("select level, id, data from " + tableName)) {
+      try (final ResultSet rst = stmt.executeQuery("select level, id, seq, data from " + tableName)) {
         int cnt = 0;
         System.out.println(LocalDateTime.now() + " START loading " + tableName + " into " + cache.getName() + " on Ignite");
         while (rst.next()) {
           final int level = rst.getInt(1);
           final long id = rst.getLong(2);
-          final long levelId = CellId.getLevelId(level, id);
+          final int seq = rst.getInt(3);
+          final long levelId = CellId.getLevelId(seq,level,id);
 
-          final ObjectInputStream ois = new ObjectInputStream(rst.getBinaryStream(3));
+          final ObjectInputStream ois = new ObjectInputStream(rst.getBinaryStream(4));
 //          System.out.printf("level:%d, id:%d -> LevelId:%16s%n", level, id, Long.toHexString(levelId));
           @SuppressWarnings("unchecked")
           final T grid = (T) ois.readObject();
           streamer.addData(levelId, grid);
-          if (++cnt % 10 == 0) streamer.flush();
+          // if (++cnt % 10 == 0) streamer.flush();
         }
         System.out.println(LocalDateTime.now() + " FINISHED loading " + tableName + " into " + cache.getName() + " on Ignite");
       } catch (IOException | ClassNotFoundException | SQLException e) {
         LOG.error("Could not import Grid!", e);
       }
-    }
-    
-    ignite.cluster().enableWal(cacheWithPrefix);
-
+    }finally {
+    	ignite.cluster().enableWal(cacheWithPrefix);
+	}
   }
   
   private static class Config {
@@ -155,5 +164,30 @@ public class OSHDB2Ignite {
     }
 
   }
+  
+//  public static void main(String[] args) throws SQLException, IgniteCheckedException {
+//	    Config largs = new Config();
+//	    JCommander jcom = JCommander.newBuilder().addObject(largs).build();
+//	    try {
+//	      jcom.parse(args);
+//	    } catch (ParameterException e) {
+//	      System.out.println("");
+//	      LOG.error(e.getLocalizedMessage());
+//	      System.out.println("");
+//	      jcom.usage();
+//
+//	      return;
+//	    }
+//
+//	    if (largs.help) {
+//	      jcom.usage();
+//	      return;
+//	    }
+//	    try (Connection con = DriverManager.getConnection("jdbc:h2:" + largs.oshdb, "sa", "")) {
+//	    
+//	    }
+//
+//	  }
+  
 
 }
