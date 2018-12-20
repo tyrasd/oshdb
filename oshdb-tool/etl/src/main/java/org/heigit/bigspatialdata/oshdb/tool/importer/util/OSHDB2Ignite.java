@@ -81,12 +81,8 @@ public class OSHDB2Ignite {
     
     
     IgniteCache<Long, T> cache = ignite.getOrCreateCache(cacheCfg);
-    
-    cache.clear();
-    
+    cache.clear();    
     ignite.cluster().disableWal(cacheWithPrefix);
-    cache.clear();
-
     
     try (IgniteDataStreamer<Long, T> streamer = ignite.dataStreamer(cache.getName())) {
       streamer.allowOverwrite(true);
