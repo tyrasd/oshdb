@@ -32,7 +32,7 @@ public class ZGrid {
 		}
 		this.maxZoom = maxZoom;
 
-		this.cellWidths = new long[maxZoom + 1];
+		this.cellWidths = new double[maxZoom + 1];
 		for (int z = 0; z <= maxZoom; z++) {
 			long zoomPow = (long) Math.pow(2, z);
 			cellWidths[z] = space / zoomPow;
