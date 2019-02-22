@@ -7,7 +7,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,11 +28,10 @@ import org.heigit.bigspatialdata.oshdb.tool.importer.cli.validator.DirExistValid
 import org.heigit.bigspatialdata.oshdb.tool.importer.load2.CellBitmaps;
 import org.heigit.bigspatialdata.oshdb.tool.importer.load2.CellData;
 import org.heigit.bigspatialdata.oshdb.tool.importer.load2.LoaderGrid;
+import org.heigit.bigspatialdata.oshdb.tool.importer.load2.LoaderGrid.Grid;
 import org.heigit.bigspatialdata.oshdb.tool.importer.load2.ReaderBitmap;
 import org.heigit.bigspatialdata.oshdb.tool.importer.load2.ReaderCellData;
-import org.heigit.bigspatialdata.oshdb.tool.importer.load2.LoaderGrid.Grid;
 import org.heigit.bigspatialdata.oshdb.tool.importer.load2.handler.OSHDBHandler;
-import org.heigit.bigspatialdata.oshdb.tool.importer.load2.loader.H2Loader.Args;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHNode;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHRelation;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHWay;
@@ -142,6 +140,7 @@ public class SplitDownLoader extends OSHDBHandler implements Closeable {
 	private static final long MIN_SIZE_MB = 4L * MB;
 
 	private final XYGridTree gridTree = new XYGridTree(14);
+	private final ZGrid zGrid = new ZGrid(14);
 
 	private Map<OSMType, DataOutputStream> indexStreams = new HashMap<>();
 	private Map<OSMType, CountingOutputStream> outStreams = new HashMap<>();
@@ -265,18 +264,17 @@ public class SplitDownLoader extends OSHDBHandler implements Closeable {
 	public <T extends OSHEntity> void split(long zId, boolean splitDown, OSMType type, int[] offsets, int size,
 			byte[] data, GetInstance<T> getInstance, Rebase<T> rebase) throws IOException {
 		final int zoom = ZGrid.getZoom(zId);
-		final XYGrid xyGrid = new XYGrid(zoom);
 		final OSHDBBoundingBox bbox = ZGrid.getBoundingBox(zId);
 		long baseLongitude = bbox.getMinLonLong() + (bbox.getMaxLonLong() - bbox.getMinLonLong()) / 2;
 		long baseLatitude = bbox.getMinLatLong() + (bbox.getMaxLatLong() - bbox.getMinLatLong()) / 2;
 
-		long xyId = xyGrid.getId(baseLongitude, baseLatitude);
+		//long xyId = xyGrid.getId(baseLongitude, baseLatitude);
 
-		HashMap<CellId, List<T>> splitDowns = new HashMap<>();
+		HashMap<Long, List<T>> splitDowns = new HashMap<>();
 		List<ByteBuffer> buffers = new ArrayList<>();
 		
 		
-		System.out.printf("%s %2d:%8d (%3d) -> %s%n", type, zoom, xyId, size, (splitDown?"split":""));
+		System.out.printf("%s %2d:%8d (%3d) -> %s%n", type, zoom, ZGrid.getIdWithoutZoom(zId), size, (splitDown?"split":""));
 		
 		int pos = 0;
 		while (pos < size) {
@@ -286,50 +284,46 @@ public class SplitDownLoader extends OSHDBHandler implements Closeable {
 
 			if (!splitDown) {
 				buffers.add(ByteBuffer.wrap(data, offset, length));
-
 			} else {
 				T osh = getInstance.apply(data, offset, length, baseLongitude, baseLatitude);
 				OSHDBBoundingBox oshBBox = osh.getBoundingBox();
-				CellId newCell = gridTree.getInsertId(oshBBox);
-				splitDowns.computeIfAbsent(newCell, it -> new ArrayList<>()).add(osh);
+				long newZId = zGrid.getZIdLowerLeft(oshBBox);
+				splitDowns.computeIfAbsent(newZId, it -> new ArrayList<>()).add(osh);
 			}
 		}
 
 		if (!splitDown) {
-			write(type, xyId, zoom, baseLongitude, baseLatitude, buffers);
+			write(type, zId, baseLongitude, baseLatitude, buffers);
 		}
 
-		for (Entry<CellId, List<T>> entry : splitDowns.entrySet()) {
-			CellId cellId = entry.getKey();
-			XYGrid newXyGrid = new XYGrid(cellId.getZoomLevel());
-			OSHDBBoundingBox newBbox = newXyGrid.getCellDimensions(cellId.getId());
+		for (Entry<Long, List<T>> entry : splitDowns.entrySet()) {
+			long newZId = entry.getKey().longValue();
+			OSHDBBoundingBox newBbox = ZGrid.getBoundingBox(newZId);
 			long newBaseLongitude = newBbox.getMinLonLong() + (newBbox.getMaxLonLong() - newBbox.getMinLonLong()) / 2;
 			long newBaseLatitude = newBbox.getMinLatLong() + (newBbox.getMaxLatLong() - newBbox.getMinLatLong()) / 2;
 
 			buffers.clear();
 			List<T> oshs = entry.getValue();
 			
-			System.out.printf("  -> %2d:%8d (%3d)%n", cellId.getZoomLevel(), cellId.getId(), oshs.size());
+			System.out.printf("  -> %2d:%8d (%3d)%n", ZGrid.getZoom(newZId), ZGrid.getIdWithoutZoom(newZId), oshs.size());
 			
 			for (T osh : oshs) {
 				ByteBuffer record = rebase.apply(osh, newBaseLongitude, newBaseLatitude);
 				buffers.add(record);
 			}
-			write(type, cellId.getId(), cellId.getZoomLevel(), newBaseLongitude, newBaseLatitude, buffers);
+			write(type, newZId, newBaseLongitude, newBaseLatitude, buffers);
 		}
 	}
 
-	public void write(OSMType type, long xyId, int zoom, long baseLongitude, long baseLatitude, List<ByteBuffer> data)
+	public void write(OSMType type, long zId, long baseLongitude, long baseLatitude, List<ByteBuffer> data)
 			throws IOException {
 		DataOutputStream indexStream = indexStreams.get(type);
 		CountingOutputStream outStream = outStreams.get(type);
 
-		indexStream.writeLong(CellId.getLevelId(zoom, xyId));
-		indexStream.writeLong(outStream.getCount());
+		long offset = outStream.getCount();
 
 		DataOutputStream out = new DataOutputStream(outStream);
-		out.writeLong(xyId);
-		out.writeInt(zoom);
+		out.writeLong(zId);
 		out.writeLong(baseLongitude);
 		out.writeLong(baseLatitude);
 		out.writeInt(data.size());
@@ -337,6 +331,10 @@ public class SplitDownLoader extends OSHDBHandler implements Closeable {
 			out.writeInt(bb.limit());
 			out.write(bb.array(), bb.position(), bb.remaining());
 		}
+		
+		indexStream.writeLong(zId);
+		indexStream.writeLong(offset);
+		indexStream.writeInt((int)(outStream.getCount()-offset));
 	}
 
 	@Override
@@ -358,7 +356,6 @@ public class SplitDownLoader extends OSHDBHandler implements Closeable {
 		for (OutputStream out : indexStreams.values()) {
 			out.close();
 		}
-
 	}
 
 }
