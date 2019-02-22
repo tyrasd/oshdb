@@ -26,7 +26,8 @@ import okio.BufferedSource;
 public class LoaderGrid {
 
 	public static class Grid {
-		long cellId;
+		public long cellId;
+		public int zoom;
 
 		Buffer nodes = new Buffer();
 		Buffer ways = new Buffer();
@@ -319,6 +320,7 @@ public class LoaderGrid {
 		Grid grid = entityGrid[zoom];
 		if (grid == null) {
 			grid = new Grid();
+			grid.zoom = zoom;
 			grid.cellId = (zoom > 0)?cellId:0;
 			entityGrid[zoom] = grid;
 		}

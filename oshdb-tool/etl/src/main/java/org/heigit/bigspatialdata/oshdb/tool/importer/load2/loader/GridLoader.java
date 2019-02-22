@@ -20,7 +20,7 @@ public abstract class GridLoader extends OSHDBHandler {
 	public static final long MB = 1L*1024L*1024L;
 
 	@Override
-	public void handleNodeGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
+	public void handleNodeGrid(long zId, int seq, boolean more, int[] offsets, int size, byte[] data) throws IOException {
 		final int zoom = ZGrid.getZoom(zId);
 		final XYGrid xyGrid = new XYGrid(zoom);
 		final OSHDBBoundingBox bbox = ZGrid.getBoundingBox(zId);
@@ -34,7 +34,7 @@ public abstract class GridLoader extends OSHDBHandler {
 	public abstract void handleNodeGrid(GridOSHNodes gridOSHNodes, int seq);
 
 	@Override
-	public void handleWayGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
+	public void handleWayGrid(long zId, int seq, boolean more, int[] offsets, int size, byte[] data) throws IOException {
 		final int zoom = ZGrid.getZoom(zId);
 		final XYGrid xyGrid = new XYGrid(zoom);
 		final OSHDBBoundingBox bbox = ZGrid.getBoundingBox(zId);
@@ -48,7 +48,7 @@ public abstract class GridLoader extends OSHDBHandler {
 	public abstract void handleWayGrid(GridOSHWays gridOSHWays,int seq);
 
 	@Override
-	public void handleRelationGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
+	public void handleRelationGrid(long zId, int seq, boolean more, int[] offsets, int size, byte[] data) throws IOException {
 		final int zoom = ZGrid.getZoom(zId);
 		final XYGrid xyGrid = new XYGrid(zoom);
 		final OSHDBBoundingBox bbox = ZGrid.getBoundingBox(zId);

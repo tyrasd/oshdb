@@ -3,48 +3,34 @@ package org.heigit.bigspatialdata.oshdb.tool.importer.load2.handler;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import org.heigit.bigspatialdata.oshdb.grid.GridOSHNodes;
-import org.heigit.bigspatialdata.oshdb.grid.GridOSHRelations;
-import org.heigit.bigspatialdata.oshdb.grid.GridOSHWays;
-import org.heigit.bigspatialdata.oshdb.index.XYGrid;
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.heigit.bigspatialdata.oshdb.osh.OSHNode;
 import org.heigit.bigspatialdata.oshdb.osh.OSHRelation;
 import org.heigit.bigspatialdata.oshdb.osh.OSHWay;
-import org.heigit.bigspatialdata.oshdb.osm.OSMNode;
-import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
-import org.heigit.bigspatialdata.oshdb.osm.OSMWay;
-import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHRelation;
 import org.heigit.bigspatialdata.oshdb.tool.importer.load2.Debug;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHNode;
+import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHRelation;
 import org.heigit.bigspatialdata.oshdb.tool.importer.osh.TransformOSHWay;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 public abstract class OSHDBHandler implements Handler {
 
-	private static final long MAX_GRID_SIZE = 1L * 1024L * 1024L * 1024L;
+	private static final long MAX_GRID_SIZE = 32L * 1024L * 1024L;
 
-	public abstract void handleNodeGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException;
+	public abstract void handleNodeGrid(long zId, int seq, boolean more, int[] offsets, int size, byte[] data) throws IOException;
 
-	public abstract void handleWayGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException;
+	public abstract void handleWayGrid(long zId, int seq, boolean more, int[] offsets, int size, byte[] data) throws IOException;
 
-	public abstract void handleRelationGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException;
+	public abstract void handleRelationGrid(long zId, int seq, boolean more, int[] offsets, int size, byte[] data) throws IOException;
 
 	private ByteBuffer buildOSHNodeRecord(TransformOSHNode node, long baseId, long baseTimestamp, long baseLongitude,
 			long baseLatitude) throws IOException {
@@ -146,9 +132,9 @@ public abstract class OSHDBHandler implements Handler {
 			out.write(record.array(), 0, record.limit());
 			offset += record.limit();
 
-			if (offset >= MAX_GRID_SIZE || !itr.hasNext()) {
+			if ((offset + size*4) >= MAX_GRID_SIZE || !itr.hasNext()) {
 				final byte[] data = out.toByteArray();
-				handleNodeGrid(zId, seq++, offsets, size, data);
+				handleNodeGrid(zId, seq++, itr.hasNext(), offsets, size, data);
 				offset = size = 0;
 				out.reset();
 			}
@@ -182,9 +168,6 @@ public abstract class OSHDBHandler implements Handler {
 			final TransformOSHWay way = itr.next();
 			wayNodes.ensureCapacity(way.getNodeIds().length);
 			for (long nodeId : way.getNodeIds()) {
-				if(nodeId == 5236808713L){
-					System.out.println("debug");
-				}
 				OSHNode osh = nodeIdOshMap.get(nodeId);
 				if (osh == null) {
 					TransformOSHNode node = nodeIdTransformNode.get(nodeId);
@@ -209,9 +192,9 @@ public abstract class OSHDBHandler implements Handler {
 			out.write(record.array(), 0, record.limit());
 			offset += record.limit();
 
-			if (offset >= MAX_GRID_SIZE || !itr.hasNext()) {
+			if ((offset + size*4) >= MAX_GRID_SIZE || !itr.hasNext()) {
 				final byte[] data = out.toByteArray();
-				handleWayGrid(zId, seq++, offsets, size, data);
+				handleWayGrid(zId, seq++, itr.hasNext(), offsets, size, data);
 				offset = size = 0;
 				out.reset();
 			}
@@ -299,9 +282,9 @@ public abstract class OSHDBHandler implements Handler {
 			out.write(record.array(), 0, record.limit());
 			offset += record.limit();
 
-			if (offset >= MAX_GRID_SIZE || !itr.hasNext()) {
+			if ((offset + size*4) >= MAX_GRID_SIZE || !itr.hasNext()) {
 				final byte[] data = out.toByteArray();
-				handleRelationGrid(zId, seq++, offsets, size, data);
+				handleRelationGrid(zId, seq++, itr.hasNext(), offsets, size, data);
 				offset = size = 0;
 				out.reset();
 			}
