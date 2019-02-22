@@ -69,8 +69,8 @@ public class IgniteLoader extends GridLoader implements Closeable {
 	private long totalNodeBytes = 0;
 
 	@Override
-	public void handleNodeGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
-		super.handleNodeGrid(zId, seq, offsets, size, data);
+	public void handleNodeGrid(long zId, int seq, boolean more, int[] offsets, int size, byte[] data) throws IOException {
+		super.handleNodeGrid(zId, seq,more, offsets, size, data);
 
 		long bytes = size * 4 + data.length;
 		bytesSinceFlush += bytes;
@@ -99,8 +99,8 @@ public class IgniteLoader extends GridLoader implements Closeable {
 	private long totalWayBytes = 0;
 
 	@Override
-	public void handleWayGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
-		super.handleWayGrid(zId, seq, offsets, size, data);
+	public void handleWayGrid(long zId, int seq, boolean more, int[] offsets, int size, byte[] data) throws IOException {
+		super.handleWayGrid(zId, seq, more, offsets, size, data);
 
 		long bytes = size * 4 + data.length;
 		bytesSinceFlush += bytes;
@@ -129,8 +129,8 @@ public class IgniteLoader extends GridLoader implements Closeable {
 	private long totalRelBytes = 0;
 
 	@Override
-	public void handleRelationGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
-		super.handleWayGrid(zId, seq, offsets, size, data);
+	public void handleRelationGrid(long zId, int seq, boolean more, int[] offsets, int size, byte[] data) throws IOException {
+		super.handleWayGrid(zId, seq,more, offsets, size, data);
 
 		long bytes = size * 4 + data.length;
 		bytesSinceFlush += bytes;

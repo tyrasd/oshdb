@@ -115,7 +115,7 @@ public class Load {
 		}
 			
 		@Override
-		public void handleNodeGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
+		public void handleNodeGrid(long zId, int seq, boolean more, int[] offsets, int size, byte[] data) throws IOException {
 			long bytes = size*4+data.length;// nodeWriter.write(zId, seq, offsets, size, data);
 			totalNodeBytes += bytes;
 			totalBytes += bytes;
@@ -124,7 +124,7 @@ public class Load {
 		}
 
 		@Override
-		public void handleWayGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
+		public void handleWayGrid(long zId, int seq, boolean more, int[] offsets, int size, byte[] data) throws IOException {
 			long bytes = size*4+data.length;// wayWriter.write(zId, seq, offsets, size, data);
 			totalWayBytes += bytes;
 			totalBytes += bytes;
@@ -138,7 +138,7 @@ public class Load {
 		}
 
 		@Override
-		public void handleRelationGrid(long zId, int seq, int[] offsets, int size, byte[] data) throws IOException {
+		public void handleRelationGrid(long zId, int seq, boolean more, int[] offsets, int size, byte[] data) throws IOException {
 			long bytes = size*4+data.length;//relationWriter.write(zId, seq, offsets, size, data);
 			totalRelBytes += bytes;
 			totalBytes += bytes;
