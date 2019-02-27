@@ -268,11 +268,7 @@ public class SplitDownLoader extends OSHDBHandler implements Closeable {
 		long baseLongitude = bbox.getMinLonLong() + (bbox.getMaxLonLong() - bbox.getMinLonLong()) / 2;
 		long baseLatitude = bbox.getMinLatLong() + (bbox.getMaxLatLong() - bbox.getMinLatLong()) / 2;
 
-		//long xyId = xyGrid.getId(baseLongitude, baseLatitude);
-
-		HashMap<Long, List<T>> splitDowns = new HashMap<>();
-		List<ByteBuffer> buffers = new ArrayList<>();
-		
+		HashMap<Long, List<ByteBuffer>> splitDowns = new HashMap<>();
 		
 		System.out.printf("%s %2d:%8d (%3d) -> %s%n", type, zoom, ZGrid.getIdWithoutZoom(zId), size, (splitDown?"split":""));
 		
@@ -282,40 +278,28 @@ public class SplitDownLoader extends OSHDBHandler implements Closeable {
 			int length = ((pos < size - 1) ? offsets[pos + 1] : data.length) - offset;
 			pos++;
 
-			if (!splitDown) {
-				buffers.add(ByteBuffer.wrap(data, offset, length));
-			} else {
-				T osh = getInstance.apply(data, offset, length, baseLongitude, baseLatitude);
+			T osh = getInstance.apply(data, offset, length, baseLongitude, baseLatitude);
+			ByteBuffer record = rebase.apply(osh, 0L, 0L);
+			
+			long newZId = zId;
+			if (splitDown) {
 				OSHDBBoundingBox oshBBox = osh.getBoundingBox();
-				long newZId = zGrid.getZIdLowerLeft(oshBBox);
-				splitDowns.computeIfAbsent(newZId, it -> new ArrayList<>()).add(osh);
+				newZId = zGrid.getZIdLowerLeft(oshBBox);
 			}
+			splitDowns.computeIfAbsent(newZId, it -> new ArrayList<>()).add(record);
 		}
 
-		if (!splitDown) {
-			write(type, zId, baseLongitude, baseLatitude, buffers);
-		}
-
-		for (Entry<Long, List<T>> entry : splitDowns.entrySet()) {
+		for (Entry<Long, List<ByteBuffer>> entry : splitDowns.entrySet()) {
 			long newZId = entry.getKey().longValue();
-			OSHDBBoundingBox newBbox = ZGrid.getBoundingBox(newZId);
-			long newBaseLongitude = newBbox.getMinLonLong() + (newBbox.getMaxLonLong() - newBbox.getMinLonLong()) / 2;
-			long newBaseLatitude = newBbox.getMinLatLong() + (newBbox.getMaxLatLong() - newBbox.getMinLatLong()) / 2;
-
-			buffers.clear();
-			List<T> oshs = entry.getValue();
+			List<ByteBuffer> buffers = entry.getValue();
 			
-			System.out.printf("  -> %2d:%8d (%3d)%n", ZGrid.getZoom(newZId), ZGrid.getIdWithoutZoom(newZId), oshs.size());
+			System.out.printf("  -> %2d:%8d (%3d)%n", ZGrid.getZoom(newZId), ZGrid.getIdWithoutZoom(newZId), buffers.size());
 			
-			for (T osh : oshs) {
-				ByteBuffer record = rebase.apply(osh, newBaseLongitude, newBaseLatitude);
-				buffers.add(record);
-			}
-			write(type, newZId, newBaseLongitude, newBaseLatitude, buffers);
+			write(type, newZId, buffers);
 		}
 	}
 
-	public void write(OSMType type, long zId, long baseLongitude, long baseLatitude, List<ByteBuffer> data)
+	public void write(OSMType type, long zId, List<ByteBuffer> data)
 			throws IOException {
 		DataOutputStream indexStream = indexStreams.get(type);
 		CountingOutputStream outStream = outStreams.get(type);
@@ -324,17 +308,16 @@ public class SplitDownLoader extends OSHDBHandler implements Closeable {
 
 		DataOutputStream out = new DataOutputStream(outStream);
 		out.writeLong(zId);
-		out.writeLong(baseLongitude);
-		out.writeLong(baseLatitude);
 		out.writeInt(data.size());
 		for (ByteBuffer bb : data) {
-			out.writeInt(bb.limit());
+			out.writeInt(bb.remaining());
 			out.write(bb.array(), bb.position(), bb.remaining());
 		}
-		
+		int outSize = Math.toIntExact(outStream.getCount() - offset);
+
 		indexStream.writeLong(zId);
 		indexStream.writeLong(offset);
-		indexStream.writeInt((int)(outStream.getCount()-offset));
+		indexStream.writeInt(outSize);
 	}
 
 	@Override
