@@ -32,7 +32,7 @@ public class GridOSHNodes extends GridOSHEntity {
             data);
   }
 
-  private GridOSHNodes(final long id, final int level, final long baseId, final long baseTimestamp,
+  public GridOSHNodes(final long id, final int level, final long baseId, final long baseTimestamp,
           final long baseLongitude, final long baseLatitude, final int[] index, final byte[] data) {
     super(id, level, baseId, baseTimestamp, baseLongitude, baseLatitude, index, data);
   }
