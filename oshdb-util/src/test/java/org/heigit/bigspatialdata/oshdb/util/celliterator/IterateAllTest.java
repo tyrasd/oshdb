@@ -11,7 +11,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import org.heigit.bigspatialdata.oshdb.grid.GridOSHEntity;
+import org.heigit.bigspatialdata.oshdb.partition.Partition;
+import org.heigit.bigspatialdata.oshdb.partition.PartitionReader;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.util.TableNames;
@@ -49,15 +50,15 @@ public class IterateAllTest {
   @Test
   public void testIssue108() throws SQLException, IOException, ClassNotFoundException, ParseException, OSHDBKeytablesNotFoundException {
     ResultSet oshCellsRawData = conn.prepareStatement("select data from " + TableNames.T_NODES).executeQuery();
-
+    PartitionReader partitionReader = new PartitionReader();
+    
     int countTotal = 0;
     int countCreated = 0;
     int countOther = 0;
     while (oshCellsRawData.next()) {
       // get one cell from the raw data stream
-      GridOSHEntity oshCellRawData = (GridOSHEntity) (new ObjectInputStream(
-          oshCellsRawData.getBinaryStream(1))
-      ).readObject();
+      byte[] oshCell = oshCellsRawData.getBytes(1);
+      Partition partition = partitionReader.read(oshCell);
 
       TreeSet<OSHDBTimestamp> timestamps = new TreeSet<>();
       timestamps.add(new OSHDBTimestamp(1325376000L));
@@ -71,7 +72,7 @@ public class IterateAllTest {
           osmEntity -> true,
           false
       )).iterateByContribution(
-          oshCellRawData
+          partition
       ).collect(Collectors.toList());
       countTotal += result.size();
       for (IterateAllEntry entry : result) {

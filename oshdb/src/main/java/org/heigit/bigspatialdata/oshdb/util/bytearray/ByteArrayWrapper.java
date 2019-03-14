@@ -1,6 +1,7 @@
 package org.heigit.bigspatialdata.oshdb.util.bytearray;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class ByteArrayWrapper {
@@ -14,10 +15,11 @@ public class ByteArrayWrapper {
   }
 
   protected final byte[] buffer;
+  
   private final int offset;
   private final int bufferSize;
   private int bufferPos;
-
+  
   public static ByteArrayWrapper newInstance(final byte[] buffer) {
     return newInstance(buffer, 0, buffer.length);
   }
@@ -216,6 +218,12 @@ public class ByteArrayWrapper {
       return result;
     }
     return new byte[0];
+  }
+  
+  public ByteBuffer getSharedBuffer(int size) {
+    ByteBuffer shared = ByteBuffer.wrap(this.buffer, this.bufferPos, size);
+    this.bufferPos += size;
+    return shared;
   }
 
   /**

@@ -31,8 +31,8 @@ import org.heigit.bigspatialdata.oshdb.api.mapreducer.backend.OSHDBIgniteMapRedu
 import org.heigit.bigspatialdata.oshdb.api.object.OSHDBMapReducible;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMContribution;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMEntitySnapshot;
-import org.heigit.bigspatialdata.oshdb.grid.GridOSHEntity;
 import org.heigit.bigspatialdata.oshdb.index.XYGridTree.CellIdRange;
+import org.heigit.bigspatialdata.oshdb.partition.Partition;
 import org.heigit.bigspatialdata.oshdb.util.CellId;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
@@ -241,8 +241,8 @@ class IgniteLocalPeekHelper {
     S execute(Ignite node, CellProcessor<S> cellProcessor) {
       Iterator<Long> cellKeysIterator = new CellKeysIterator(cellIdRanges);
 
-      Set<IgniteCache<Long, GridOSHEntity>> caches = this.cacheNames.stream()
-          .map(node::<Long, GridOSHEntity>cache)
+      Set<IgniteCache<Long, Partition>> caches = this.cacheNames.stream()
+          .map(node::<Long, Partition>cache)
           .collect(Collectors.toSet());
 
       return StreamSupport.stream(

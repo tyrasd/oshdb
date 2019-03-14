@@ -1,5 +1,6 @@
 package org.heigit.bigspatialdata.oshdb.api.mapreducer.backend;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,9 +36,10 @@ import org.heigit.bigspatialdata.oshdb.api.mapreducer.backend.OSHDBIgniteMapRedu
 import org.heigit.bigspatialdata.oshdb.api.object.OSHDBMapReducible;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMContribution;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMEntitySnapshot;
-import org.heigit.bigspatialdata.oshdb.grid.GridOSHEntity;
 import org.heigit.bigspatialdata.oshdb.index.XYGridTree.CellIdRange;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
+import org.heigit.bigspatialdata.oshdb.partition.Partition;
+import org.heigit.bigspatialdata.oshdb.partition.PartitionReader;
 import org.heigit.bigspatialdata.oshdb.util.CellId;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
@@ -193,6 +195,7 @@ class IgniteScanQueryHelper {
     /* computation settings */
     final String cacheName;
     final Map<Integer, TreeMap<Long, CellIdRange>> cellIdRangesByLevel;
+    final PartitionReader partitionReader;
     final CellIterator cellIterator;
     final SerializableFunction<V, M> mapper;
     final SerializableSupplier<S> identitySupplier;
@@ -207,6 +210,7 @@ class IgniteScanQueryHelper {
         SerializableBiFunction<S, R, S> accumulator, SerializableBinaryOperator<S> combiner) {
       this.cacheName = cacheName;
       this.cellIdRangesByLevel = cellIdRangesByLevel;
+      this.partitionReader = new PartitionReader();
       this.cellIterator = new CellIterator(
           tstamps, bbox, poly, tagInterpreter, preFilter, filter, false
       );
@@ -237,7 +241,7 @@ class IgniteScanQueryHelper {
     }
 
     S execute(Ignite node, CellProcessor<S> cellProcessor) {
-      IgniteCache<Long, BinaryObject> cache = node.cache(cacheName).withKeepBinary();
+      IgniteCache<Long, byte[]> cache = node.cache(cacheName);
       // Getting a list of the partitions owned by this node.
       List<Integer> myPartitions = nodesToPart.get(node.cluster().localNode().id());
       Collections.shuffle(myPartitions);
@@ -248,21 +252,22 @@ class IgniteScanQueryHelper {
             // noinspection unchecked
             try (
                 QueryCursor<S> cursor = cache.query(
-                    new ScanQuery((key, cell) ->
+                    new ScanQuery<Long, byte[]>((key, cell) ->
                         this.isActive() && this.cellKeyInRange((Long)key)
                     ).setPartition(part), cacheEntry -> {
                       if (!this.isActive()) {
                         return identitySupplier.get();
                       }
                       // iterate over the history of all OSM objects in the current cell
-                      Object data = ((Cache.Entry<Long, Object>) cacheEntry).getValue();
-                      GridOSHEntity oshEntityCell;
-                      if (data instanceof BinaryObject) {
-                        oshEntityCell = ((BinaryObject) data).deserialize();
-                      } else {
-                        oshEntityCell = (GridOSHEntity) data;
+                      byte[] oshCell = cacheEntry.getValue();
+                      Partition partition;
+                      try {
+                        partition = partitionReader.read(oshCell);
+                        return cellProcessor.apply(partition, this.cellIterator);
+                      } catch (IOException e) {
+                        LOG.error("error reading partition", e);
                       }
-                      return cellProcessor.apply(oshEntityCell, this.cellIterator);
+                      return identitySupplier.get();
                     }
                 )
             ) {

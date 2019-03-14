@@ -43,6 +43,7 @@ import org.heigit.bigspatialdata.oshdb.index.XYGridTree.CellIdRange;
 import org.heigit.bigspatialdata.oshdb.osh.OSHEntity;
 import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
+import org.heigit.bigspatialdata.oshdb.partition.PartitionReader;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTag;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTagKey;
@@ -112,6 +113,7 @@ public abstract class MapReducer<X> implements
   private static final Logger LOG = LoggerFactory.getLogger(MapReducer.class);
 
   protected OSHDBDatabase oshdb;
+  protected PartitionReader partitionReader;
   protected transient OSHDBJdbc keytables;
 
   protected Long timeout = null;
@@ -154,11 +156,13 @@ public abstract class MapReducer<X> implements
   protected MapReducer(OSHDBDatabase oshdb, Class<? extends OSHDBMapReducible> forClass) {
     this.oshdb = oshdb;
     this.forClass = forClass;
+    this.partitionReader = new PartitionReader();
   }
 
   // copy constructor
   protected MapReducer(MapReducer<?> obj) {
     this.oshdb = obj.oshdb;
+    this.partitionReader = obj.partitionReader;
     this.keytables = obj.keytables;
 
     this.forClass = obj.forClass;

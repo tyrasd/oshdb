@@ -28,9 +28,10 @@ import org.heigit.bigspatialdata.oshdb.api.mapreducer.backend.Kernels.CellProces
 import org.heigit.bigspatialdata.oshdb.api.object.OSHDBMapReducible;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMContribution;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMEntitySnapshot;
-import org.heigit.bigspatialdata.oshdb.grid.GridOSHEntity;
 import org.heigit.bigspatialdata.oshdb.index.XYGridTree.CellIdRange;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
+import org.heigit.bigspatialdata.oshdb.partition.Partition;
+import org.heigit.bigspatialdata.oshdb.partition.PartitionReader;
 import org.heigit.bigspatialdata.oshdb.util.CellId;
 import org.heigit.bigspatialdata.oshdb.util.TableNames;
 import org.heigit.bigspatialdata.oshdb.util.celliterator.CellIterator;
@@ -62,6 +63,7 @@ public class MapReducerIgniteAffinityCall<X> extends MapReducer<X>
    * {@link System#currentTimeMillis()}. Used to determine query timeouts.
    */
   private long executionStartTimeMillis;
+  private final PartitionReader partitionReader = new PartitionReader();
 
   public MapReducerIgniteAffinityCall(OSHDBDatabase oshdb,
       Class<? extends OSHDBMapReducible> forClass) {
@@ -142,7 +144,7 @@ public class MapReducerIgniteAffinityCall<X> extends MapReducer<X>
     return this.typeFilter.stream().map((SerializableFunction<OSMType, S>) osmType -> {
       assert TableNames.forOSMType(osmType).isPresent();
       String cacheName = TableNames.forOSMType(osmType).get().toString(this.oshdb.prefix());
-      IgniteCache<Long, GridOSHEntity> cache = ignite.cache(cacheName);
+      IgniteCache<Long, byte[]> cache = ignite.cache(cacheName);
 
       return Streams.stream(cellIdRanges)
           .flatMapToLong(cellIdRangeToCellIds())
@@ -151,13 +153,14 @@ public class MapReducerIgniteAffinityCall<X> extends MapReducer<X>
           .mapToObj(cellLongId -> asyncGetHandleTimeouts(
               compute.affinityCallAsync(cacheName, cellLongId, () -> {
                 @SuppressWarnings("SerializableStoresNonSerializable")
-                GridOSHEntity oshEntityCell = cache.localPeek(cellLongId);
+                byte[] oshCell = cache.localPeek(cellLongId);
                 S ret;
-                if (oshEntityCell == null) {
+                if (oshCell == null) {
                   ret = identitySupplier.get();
 
                 } else {
-                  ret = cellProcessor.apply(oshEntityCell, cellIterator);
+                  Partition partition = partitionReader.read(oshCell);
+                  ret = cellProcessor.apply(partition, cellIterator);
                 }
                 onClose.run();
                 return ret;
@@ -193,7 +196,7 @@ public class MapReducerIgniteAffinityCall<X> extends MapReducer<X>
     return typeFilter.stream().map((SerializableFunction<OSMType, Stream<X>>) osmType -> {
       assert TableNames.forOSMType(osmType).isPresent();
       String cacheName = TableNames.forOSMType(osmType).get().toString(this.oshdb.prefix());
-      IgniteCache<Long, GridOSHEntity> cache = ignite.cache(cacheName);
+      IgniteCache<Long, byte[]> cache = ignite.cache(cacheName);
 
       return Streams.stream(cellIdRanges)
           .flatMapToLong(cellIdRangeToCellIds())
@@ -202,12 +205,13 @@ public class MapReducerIgniteAffinityCall<X> extends MapReducer<X>
           .mapToObj(cellLongId -> asyncGetHandleTimeouts(
                 compute.affinityCallAsync(cacheName, cellLongId, () -> {
                   @SuppressWarnings("SerializableStoresNonSerializable")
-                  GridOSHEntity oshEntityCell = cache.localPeek(cellLongId);
+                  byte[] oshCell = cache.localPeek(cellLongId);
                   Collection<X> ret;
-                  if (oshEntityCell == null) {
+                  if (oshCell == null) {
                     ret = Collections.<X>emptyList();
                   } else {
-                    ret = processor.apply(oshEntityCell, cellIterator);
+                    Partition partition = partitionReader.read(oshCell);
+                    ret = processor.apply(partition, cellIterator);
                   }
                   onClose.run();
                   return ret;

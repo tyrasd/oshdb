@@ -1,6 +1,7 @@
 package org.heigit.bigspatialdata.oshdb.util.celliterator;
 
 import com.google.common.collect.Streams;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -15,7 +16,6 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
-import org.heigit.bigspatialdata.oshdb.grid.GridOSHEntity;
 import org.heigit.bigspatialdata.oshdb.index.XYGrid;
 import org.heigit.bigspatialdata.oshdb.osh.OSHEntities;
 import org.heigit.bigspatialdata.oshdb.osh.OSHEntity;
@@ -24,6 +24,7 @@ import org.heigit.bigspatialdata.oshdb.osm.OSMMember;
 import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.osm.OSMWay;
+import org.heigit.bigspatialdata.oshdb.partition.Partition;
 import org.heigit.bigspatialdata.oshdb.util.CellId;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
@@ -162,14 +163,11 @@ public class CellIterator implements Serializable {
    *         optimize away recalculating expensive geometry operations on unchanged feature
    *         geometries later on in the code.
    */
-  public Stream<IterateByTimestampEntry> iterateByTimestamps(GridOSHEntity cell) {
+  public Stream<IterateByTimestampEntry> iterateByTimestamps(Partition cell) {
     final boolean allFullyInside;
     if (isBoundByPolygon) {
       // if cell is fully inside bounding box/polygon we can skip all entity-based inclusion checks
-      OSHDBBoundingBox cellBoundingBox = XYGrid.getBoundingBox(new CellId(
-          cell.getLevel(),
-          cell.getId()
-      ), true);
+      OSHDBBoundingBox cellBoundingBox = cell.getInfo().getBoundingBox();
       if (bboxOutsidePolygon.test(cellBoundingBox)) {
         return Stream.empty();
       }
@@ -178,7 +176,13 @@ public class CellIterator implements Serializable {
       allFullyInside = false;
     }
 
-    Iterable<? extends OSHEntity> cellData = cell.getEntities();
+    Iterable<? extends OSHEntity> cellData;
+    try {
+      cellData = cell.getEntities();
+    } catch (IOException e) {
+      LOG.error("error getting entities from cell("+cell.getInfo()+")", e);
+      return Stream.empty();
+    }
     return StreamSupport.stream(cellData.spliterator(), false).flatMap(oshEntity -> {
       if (!oshEntityPreFilter.test(oshEntity) ||
           !allFullyInside && (
@@ -418,16 +422,13 @@ public class CellIterator implements Serializable {
    * @return a stream of matching filtered OSMEntities with their clipped Geometries and timestamp
    *         intervals.
    */
-  public Stream<IterateAllEntry> iterateByContribution(GridOSHEntity cell) {
+  public Stream<IterateAllEntry> iterateByContribution(Partition cell) {
     OSHDBTimestampInterval timeInterval = new OSHDBTimestampInterval(timestamps);
 
     final boolean allFullyInside;
     if (isBoundByPolygon) {
       // if cell is fully inside bounding box/polygon we can skip all entity-based inclusion checks
-      OSHDBBoundingBox cellBoundingBox = XYGrid.getBoundingBox(new CellId(
-          cell.getLevel(),
-          cell.getId()
-      ), true);
+      OSHDBBoundingBox cellBoundingBox = cell.getInfo().getBoundingBox();
       if (bboxOutsidePolygon.test(cellBoundingBox)) {
         return Stream.empty();
       }
@@ -441,8 +442,13 @@ public class CellIterator implements Serializable {
       throw new Error("this is not yet properly implemented (probably)");
     }
 
-    //noinspection unchecked
-    Iterable<? extends OSHEntity> cellData = cell.getEntities();
+    Iterable<? extends OSHEntity> cellData;
+    try {
+      cellData = cell.getEntities();
+    } catch (IOException e) {
+      LOG.error("error getting entities from cell("+cell.getInfo()+")", e);
+      return Stream.empty();
+    }
 
     return StreamSupport.stream(cellData.spliterator(), false).flatMap(oshEntity -> {
       if (!oshEntityPreFilter.test(oshEntity) ||

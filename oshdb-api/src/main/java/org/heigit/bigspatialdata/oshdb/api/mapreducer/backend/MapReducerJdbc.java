@@ -18,8 +18,8 @@ import org.heigit.bigspatialdata.oshdb.api.db.OSHDBJdbc;
 import org.heigit.bigspatialdata.oshdb.api.mapreducer.MapReducer;
 import org.heigit.bigspatialdata.oshdb.api.mapreducer.backend.Kernels.CancelableProcessStatus;
 import org.heigit.bigspatialdata.oshdb.api.object.OSHDBMapReducible;
-import org.heigit.bigspatialdata.oshdb.grid.GridOSHEntity;
 import org.heigit.bigspatialdata.oshdb.index.XYGridTree.CellIdRange;
+import org.heigit.bigspatialdata.oshdb.partition.Partition;
 import org.heigit.bigspatialdata.oshdb.util.TableNames;
 import org.heigit.bigspatialdata.oshdb.util.exceptions.OSHDBTimeoutException;
 
@@ -67,21 +67,21 @@ abstract class MapReducerJdbc<X> extends MapReducer<X> implements CancelableProc
   /**
    * Returns data of one cell from the raw data stream.
    */
-  protected GridOSHEntity readOshCellRawData(ResultSet oshCellsRawData)
+  protected Partition readOshCellRawData(ResultSet oshCellsRawData)
       throws IOException, ClassNotFoundException, SQLException {
-    return (GridOSHEntity)
-        (new ObjectInputStream(oshCellsRawData.getBinaryStream(1))).readObject();
+    byte[] oshCell = oshCellsRawData.getBytes(1);
+    return partitionReader.read(oshCell);
   }
 
   @Nonnull
-  protected Stream<? extends GridOSHEntity> getOshCellsStream(CellIdRange cellIdRange) {
+  protected Stream<? extends Partition> getOshCellsStream(CellIdRange cellIdRange) {
     try {
       ResultSet oshCellsRawData = getOshCellsRawDataFromDb(cellIdRange);
       if (!oshCellsRawData.next()) {
         return Stream.empty();
       }
       return StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-          new Iterator<GridOSHEntity>() {
+          new Iterator<Partition>() {
             @Override
             public boolean hasNext() {
               try {
@@ -92,12 +92,12 @@ abstract class MapReducerJdbc<X> extends MapReducer<X> implements CancelableProc
             }
 
             @Override
-            public GridOSHEntity next() {
+            public Partition next() {
               try {
                 if (!hasNext()) {
                   throw new NoSuchElementException();
                 }
-                GridOSHEntity data = readOshCellRawData(oshCellsRawData);
+                Partition data = readOshCellRawData(oshCellsRawData);
                 if (!oshCellsRawData.next()) {
                   oshCellsRawData.close();
                 }

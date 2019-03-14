@@ -15,7 +15,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.heigit.bigspatialdata.oshdb.api.db.OSHDBH2;
 import org.heigit.bigspatialdata.oshdb.api.db.OSHDBIgnite;
-import org.heigit.bigspatialdata.oshdb.grid.GridOSHNodes;
+import org.heigit.bigspatialdata.oshdb.partition.Partition;
+import org.heigit.bigspatialdata.oshdb.partition.PartitionReader;
 import org.heigit.bigspatialdata.oshdb.util.CellId;
 import org.heigit.bigspatialdata.oshdb.util.TableNames;
 import static org.junit.Assert.fail;
@@ -36,19 +37,19 @@ abstract class TestMapReduceOSHDB_Ignite extends TestMapReduce {
     Ignite ignite = ((OSHDBIgnite) this.oshdb).getIgnite();
     ignite.cluster().active(true);
 
-    CacheConfiguration<Long, GridOSHNodes> cacheCfg =
+    CacheConfiguration<Long, byte[]> cacheCfg =
         new CacheConfiguration<>(TableNames.T_NODES.toString(prefix));
     cacheCfg.setStatisticsEnabled(true);
     cacheCfg.setBackups(0);
     cacheCfg.setCacheMode(CacheMode.PARTITIONED);
-    IgniteCache<Long, GridOSHNodes> cache = ignite.getOrCreateCache(cacheCfg);
+    IgniteCache<Long, byte[]> cache = ignite.getOrCreateCache(cacheCfg);
     cache.clear();
     // dummy caches for ways+relations (at the moment we don't use them in the actual TestMapReduce)
     ignite.getOrCreateCache(new CacheConfiguration<>(TableNames.T_WAYS.toString(prefix)));
     ignite.getOrCreateCache(new CacheConfiguration<>(TableNames.T_RELATIONS.toString(prefix)));
 
     // load test data into ignite cache
-    try (IgniteDataStreamer<Long, GridOSHNodes> streamer = ignite.dataStreamer(cache.getName())) {
+    try (IgniteDataStreamer<Long, byte[]> streamer = ignite.dataStreamer(cache.getName())) {
       Connection h2Conn = oshdb_h2.getConnection();
       Statement h2Stmt = h2Conn.createStatement();
 
@@ -59,13 +60,9 @@ abstract class TestMapReduceOSHDB_Ignite extends TestMapReduce {
         while (rst.next()) {
           final int level = rst.getInt(1);
           final long id = rst.getLong(2);
-          final ObjectInputStream ois = new ObjectInputStream(rst.getBinaryStream(3));
-          final GridOSHNodes grid = (GridOSHNodes) ois.readObject();
-          streamer.addData(CellId.getLevelId(level, id), grid);
+          final byte[] oshCell = rst.getBytes(3);
+          streamer.addData(CellId.getLevelId(level, id), oshCell);
         }
-      } catch (IOException | ClassNotFoundException e) {
-        e.printStackTrace();
-        fail(e.toString());
       }
     } catch (SQLException e) {
       // TODO Auto-generated catch block
