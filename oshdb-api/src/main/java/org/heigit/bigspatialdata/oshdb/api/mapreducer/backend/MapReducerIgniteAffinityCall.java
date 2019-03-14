@@ -28,10 +28,10 @@ import org.heigit.bigspatialdata.oshdb.api.mapreducer.backend.Kernels.CellProces
 import org.heigit.bigspatialdata.oshdb.api.object.OSHDBMapReducible;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMContribution;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMEntitySnapshot;
+import org.heigit.bigspatialdata.oshdb.datacell.DataCell;
+import org.heigit.bigspatialdata.oshdb.datacell.DataCellReader;
 import org.heigit.bigspatialdata.oshdb.index.XYGridTree.CellIdRange;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
-import org.heigit.bigspatialdata.oshdb.partition.Partition;
-import org.heigit.bigspatialdata.oshdb.partition.PartitionReader;
 import org.heigit.bigspatialdata.oshdb.util.CellId;
 import org.heigit.bigspatialdata.oshdb.util.TableNames;
 import org.heigit.bigspatialdata.oshdb.util.celliterator.CellIterator;
@@ -63,7 +63,7 @@ public class MapReducerIgniteAffinityCall<X> extends MapReducer<X>
    * {@link System#currentTimeMillis()}. Used to determine query timeouts.
    */
   private long executionStartTimeMillis;
-  private final PartitionReader partitionReader = new PartitionReader();
+  private final DataCellReader dataCellReader = new DataCellReader();
 
   public MapReducerIgniteAffinityCall(OSHDBDatabase oshdb,
       Class<? extends OSHDBMapReducible> forClass) {
@@ -159,8 +159,8 @@ public class MapReducerIgniteAffinityCall<X> extends MapReducer<X>
                   ret = identitySupplier.get();
 
                 } else {
-                  Partition partition = partitionReader.read(oshCell);
-                  ret = cellProcessor.apply(partition, cellIterator);
+                  DataCell dataCell = dataCellReader.read(oshCell);
+                  ret = cellProcessor.apply(dataCell, cellIterator);
                 }
                 onClose.run();
                 return ret;
@@ -210,8 +210,8 @@ public class MapReducerIgniteAffinityCall<X> extends MapReducer<X>
                   if (oshCell == null) {
                     ret = Collections.<X>emptyList();
                   } else {
-                    Partition partition = partitionReader.read(oshCell);
-                    ret = processor.apply(partition, cellIterator);
+                    DataCell dataCell = dataCellReader.read(oshCell);
+                    ret = processor.apply(dataCell, cellIterator);
                   }
                   onClose.run();
                   return ret;

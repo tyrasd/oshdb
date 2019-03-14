@@ -36,10 +36,10 @@ import org.heigit.bigspatialdata.oshdb.api.mapreducer.backend.OSHDBIgniteMapRedu
 import org.heigit.bigspatialdata.oshdb.api.object.OSHDBMapReducible;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMContribution;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMEntitySnapshot;
+import org.heigit.bigspatialdata.oshdb.datacell.DataCell;
+import org.heigit.bigspatialdata.oshdb.datacell.DataCellReader;
 import org.heigit.bigspatialdata.oshdb.index.XYGridTree.CellIdRange;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
-import org.heigit.bigspatialdata.oshdb.partition.Partition;
-import org.heigit.bigspatialdata.oshdb.partition.PartitionReader;
 import org.heigit.bigspatialdata.oshdb.util.CellId;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
@@ -169,7 +169,7 @@ public class MapReducerIgniteScanQuery<X> extends MapReducer<X> {
 
 class IgniteScanQueryHelper {
   /**
-   * Compute closure that iterates over every partition owned by a node located in a partition.
+   * Compute closure that iterates over every dataCell owned by a node located in a dataCell.
    */
   private abstract static class MapReduceCellsOnIgniteCacheComputeJob
       <V, R, M, S, P extends Geometry & Polygonal>
@@ -195,7 +195,7 @@ class IgniteScanQueryHelper {
     /* computation settings */
     final String cacheName;
     final Map<Integer, TreeMap<Long, CellIdRange>> cellIdRangesByLevel;
-    final PartitionReader partitionReader;
+    final DataCellReader dataCellReader;
     final CellIterator cellIterator;
     final SerializableFunction<V, M> mapper;
     final SerializableSupplier<S> identitySupplier;
@@ -210,7 +210,7 @@ class IgniteScanQueryHelper {
         SerializableBiFunction<S, R, S> accumulator, SerializableBinaryOperator<S> combiner) {
       this.cacheName = cacheName;
       this.cellIdRangesByLevel = cellIdRangesByLevel;
-      this.partitionReader = new PartitionReader();
+      this.dataCellReader = new DataCellReader();
       this.cellIterator = new CellIterator(
           tstamps, bbox, poly, tagInterpreter, preFilter, filter, false
       );
@@ -260,12 +260,12 @@ class IgniteScanQueryHelper {
                       }
                       // iterate over the history of all OSM objects in the current cell
                       byte[] oshCell = cacheEntry.getValue();
-                      Partition partition;
+                      DataCell dataCell;
                       try {
-                        partition = partitionReader.read(oshCell);
-                        return cellProcessor.apply(partition, this.cellIterator);
+                        dataCell = dataCellReader.read(oshCell);
+                        return cellProcessor.apply(dataCell, this.cellIterator);
                       } catch (IOException e) {
-                        LOG.error("error reading partition", e);
+                        LOG.error("error reading dataCell", e);
                       }
                       return identitySupplier.get();
                     }

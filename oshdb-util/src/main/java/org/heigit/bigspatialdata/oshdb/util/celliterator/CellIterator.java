@@ -16,6 +16,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
+import org.heigit.bigspatialdata.oshdb.datacell.DataCell;
 import org.heigit.bigspatialdata.oshdb.index.XYGrid;
 import org.heigit.bigspatialdata.oshdb.osh.OSHEntities;
 import org.heigit.bigspatialdata.oshdb.osh.OSHEntity;
@@ -24,7 +25,6 @@ import org.heigit.bigspatialdata.oshdb.osm.OSMMember;
 import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.osm.OSMWay;
-import org.heigit.bigspatialdata.oshdb.partition.Partition;
 import org.heigit.bigspatialdata.oshdb.util.CellId;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
@@ -163,7 +163,7 @@ public class CellIterator implements Serializable {
    *         optimize away recalculating expensive geometry operations on unchanged feature
    *         geometries later on in the code.
    */
-  public Stream<IterateByTimestampEntry> iterateByTimestamps(Partition cell) {
+  public Stream<IterateByTimestampEntry> iterateByTimestamps(DataCell cell) {
     final boolean allFullyInside;
     if (isBoundByPolygon) {
       // if cell is fully inside bounding box/polygon we can skip all entity-based inclusion checks
@@ -422,7 +422,7 @@ public class CellIterator implements Serializable {
    * @return a stream of matching filtered OSMEntities with their clipped Geometries and timestamp
    *         intervals.
    */
-  public Stream<IterateAllEntry> iterateByContribution(Partition cell) {
+  public Stream<IterateAllEntry> iterateByContribution(DataCell cell) {
     OSHDBTimestampInterval timeInterval = new OSHDBTimestampInterval(timestamps);
 
     final boolean allFullyInside;

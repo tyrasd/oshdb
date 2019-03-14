@@ -1,8 +1,8 @@
-package org.heigit.bigspatialdata.oshdb.partition;
+package org.heigit.bigspatialdata.oshdb.datacell;
 
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 
-public interface PartitionInfo {
+public interface DataCellInfo {
   
   OSHDBBoundingBox getBoundingBox();
 

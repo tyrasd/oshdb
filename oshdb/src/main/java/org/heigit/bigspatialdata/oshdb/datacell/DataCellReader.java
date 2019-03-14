@@ -1,11 +1,11 @@
-package org.heigit.bigspatialdata.oshdb.partition;
+package org.heigit.bigspatialdata.oshdb.datacell;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import org.heigit.bigspatialdata.oshdb.impl.partition.v0_5.GridOSHEntities;
-import org.heigit.bigspatialdata.oshdb.impl.partition.v0_5.GridOSHNodes;
-import org.heigit.bigspatialdata.oshdb.impl.partition.v0_5.GridOSHRelations;
-import org.heigit.bigspatialdata.oshdb.impl.partition.v0_5.GridOSHWays;
+import org.heigit.bigspatialdata.oshdb.impl.datacell.v0_5.GridOSHEntities;
+import org.heigit.bigspatialdata.oshdb.impl.datacell.v0_5.GridOSHNodes;
+import org.heigit.bigspatialdata.oshdb.impl.datacell.v0_5.GridOSHRelations;
+import org.heigit.bigspatialdata.oshdb.impl.datacell.v0_5.GridOSHWays;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 
 
@@ -18,14 +18,14 @@ import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
  * -  4 bytes version patch (big endian)
  *
  */
-public class PartitionReader {
+public class DataCellReader {
   public static final byte[] MAGIC_BYTES = "oshdb@HeiGIT".getBytes();
 
-  public Partition read(byte[] bytes) throws IOException {
+  public DataCell read(byte[] bytes) throws IOException {
     return read(bytes, 0, bytes.length);
   }
   
-  public Partition read(byte[] bytes, int offset, int length) throws IOException {
+  public DataCell read(byte[] bytes, int offset, int length) throws IOException {
     if (!checkMagicBytes(bytes, offset, length)) {
       throw new IOException("bytes does not start with MAGIC_BYTES");
     }
@@ -44,7 +44,7 @@ public class PartitionReader {
   }
 
 
-  private Partition version0_5(int major, int minor, int patch, ByteBuffer buffer) throws IOException {
+  private DataCell version0_5(int major, int minor, int patch, ByteBuffer buffer) throws IOException {
     int type = buffer.get();
     
     long id = buffer.getLong();

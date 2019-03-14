@@ -1,4 +1,4 @@
-package org.heigit.bigspatialdata.oshdb.partition;
+package org.heigit.bigspatialdata.oshdb.datacell;
 
 import java.io.IOException;
 import org.heigit.bigspatialdata.oshdb.osh.OSHEntity;
@@ -8,9 +8,9 @@ import org.heigit.bigspatialdata.oshdb.osh.OSHEntity;
  * 
  *
  */
-public interface Partition {
+public interface DataCell {
   
-  PartitionInfo getInfo();
+  DataCellInfo getInfo();
   
   Iterable<? extends OSHEntity> getEntities() throws IOException;
 

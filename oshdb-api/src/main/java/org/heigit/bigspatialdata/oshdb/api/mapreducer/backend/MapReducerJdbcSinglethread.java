@@ -17,8 +17,8 @@ import org.heigit.bigspatialdata.oshdb.api.mapreducer.backend.Kernels.CellProces
 import org.heigit.bigspatialdata.oshdb.api.object.OSHDBMapReducible;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMContribution;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMEntitySnapshot;
+import org.heigit.bigspatialdata.oshdb.datacell.DataCell;
 import org.heigit.bigspatialdata.oshdb.index.XYGridTree.CellIdRange;
-import org.heigit.bigspatialdata.oshdb.partition.Partition;
 import org.heigit.bigspatialdata.oshdb.util.celliterator.CellIterator;
 import org.jetbrains.annotations.NotNull;
 import org.json.simple.parser.ParseException;
@@ -63,7 +63,7 @@ public class MapReducerJdbcSinglethread<X> extends MapReducerJdbc<X> {
       ResultSet oshCellsRawData = getOshCellsRawDataFromDb(cellIdRange);
 
       while (oshCellsRawData.next()) {
-        Partition oshCellRawData = readOshCellRawData(oshCellsRawData);
+        DataCell oshCellRawData = readOshCellRawData(oshCellsRawData);
         result = combiner.apply(
             result,
             cellProcessor.apply(oshCellRawData, cellIterator)

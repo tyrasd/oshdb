@@ -1,17 +1,17 @@
-package org.heigit.bigspatialdata.oshdb.impl.partition.v0_5;
+package org.heigit.bigspatialdata.oshdb.impl.datacell.v0_5;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import org.heigit.bigspatialdata.oshdb.datacell.DataCell;
+import org.heigit.bigspatialdata.oshdb.datacell.DataCellInfo;
 import org.heigit.bigspatialdata.oshdb.osh.OSHEntity;
-import org.heigit.bigspatialdata.oshdb.partition.Partition;
-import org.heigit.bigspatialdata.oshdb.partition.PartitionInfo;
 import org.heigit.bigspatialdata.oshdb.util.bytearray.ByteArrayWrapper;
 import org.heigit.bigspatialdata.oshdb.util.function.IOFunction;
 
-public abstract class GridOSHEntities extends GridOSHInfo implements Partition {
+public abstract class GridOSHEntities extends GridOSHInfo implements DataCell {
   protected final int size;
 
   protected final byte[] data;
@@ -32,7 +32,7 @@ public abstract class GridOSHEntities extends GridOSHInfo implements Partition {
   }
 
   @Override
-  public PartitionInfo getInfo() {
+  public DataCellInfo getInfo() {
     return this;
   }
 

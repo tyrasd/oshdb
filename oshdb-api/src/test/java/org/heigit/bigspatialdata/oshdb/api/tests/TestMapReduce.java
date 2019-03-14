@@ -13,8 +13,8 @@ import org.heigit.bigspatialdata.oshdb.util.exceptions.OSHDBTimeoutException;
 import org.heigit.bigspatialdata.oshdb.util.time.OSHDBTimestamps;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMContribution;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMEntitySnapshot;
+import org.heigit.bigspatialdata.oshdb.datacell.DataCellReader;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
-import org.heigit.bigspatialdata.oshdb.partition.PartitionReader;
 import org.junit.Test;
 
 import java.util.Set;

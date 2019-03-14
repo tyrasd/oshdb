@@ -31,8 +31,8 @@ import org.heigit.bigspatialdata.oshdb.api.mapreducer.backend.OSHDBIgniteMapRedu
 import org.heigit.bigspatialdata.oshdb.api.object.OSHDBMapReducible;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMContribution;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMEntitySnapshot;
+import org.heigit.bigspatialdata.oshdb.datacell.DataCell;
 import org.heigit.bigspatialdata.oshdb.index.XYGridTree.CellIdRange;
-import org.heigit.bigspatialdata.oshdb.partition.Partition;
 import org.heigit.bigspatialdata.oshdb.util.CellId;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
@@ -134,7 +134,7 @@ public class MapReducerIgniteLocalPeek<X> extends MapReducer<X> {
 
 class IgniteLocalPeekHelper {
   /**
-   * Compute closure that iterates over every partition owned by a node located in a partition.
+   * Compute closure that iterates over every dataCell owned by a node located in a dataCell.
    */
   private abstract static class MapReduceCellsOnIgniteCacheComputeJob
       <V, R, M, S, P extends Geometry & Polygonal>
@@ -241,8 +241,8 @@ class IgniteLocalPeekHelper {
     S execute(Ignite node, CellProcessor<S> cellProcessor) {
       Iterator<Long> cellKeysIterator = new CellKeysIterator(cellIdRanges);
 
-      Set<IgniteCache<Long, Partition>> caches = this.cacheNames.stream()
-          .map(node::<Long, Partition>cache)
+      Set<IgniteCache<Long, DataCell>> caches = this.cacheNames.stream()
+          .map(node::<Long, DataCell>cache)
           .collect(Collectors.toSet());
 
       return StreamSupport.stream(

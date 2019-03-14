@@ -18,8 +18,8 @@ import org.heigit.bigspatialdata.oshdb.api.db.OSHDBJdbc;
 import org.heigit.bigspatialdata.oshdb.api.mapreducer.MapReducer;
 import org.heigit.bigspatialdata.oshdb.api.mapreducer.backend.Kernels.CancelableProcessStatus;
 import org.heigit.bigspatialdata.oshdb.api.object.OSHDBMapReducible;
+import org.heigit.bigspatialdata.oshdb.datacell.DataCell;
 import org.heigit.bigspatialdata.oshdb.index.XYGridTree.CellIdRange;
-import org.heigit.bigspatialdata.oshdb.partition.Partition;
 import org.heigit.bigspatialdata.oshdb.util.TableNames;
 import org.heigit.bigspatialdata.oshdb.util.exceptions.OSHDBTimeoutException;
 
@@ -67,21 +67,21 @@ abstract class MapReducerJdbc<X> extends MapReducer<X> implements CancelableProc
   /**
    * Returns data of one cell from the raw data stream.
    */
-  protected Partition readOshCellRawData(ResultSet oshCellsRawData)
+  protected DataCell readOshCellRawData(ResultSet oshCellsRawData)
       throws IOException, ClassNotFoundException, SQLException {
     byte[] oshCell = oshCellsRawData.getBytes(1);
-    return partitionReader.read(oshCell);
+    return dataCellReader.read(oshCell);
   }
 
   @Nonnull
-  protected Stream<? extends Partition> getOshCellsStream(CellIdRange cellIdRange) {
+  protected Stream<? extends DataCell> getOshCellsStream(CellIdRange cellIdRange) {
     try {
       ResultSet oshCellsRawData = getOshCellsRawDataFromDb(cellIdRange);
       if (!oshCellsRawData.next()) {
         return Stream.empty();
       }
       return StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-          new Iterator<Partition>() {
+          new Iterator<DataCell>() {
             @Override
             public boolean hasNext() {
               try {
@@ -92,12 +92,12 @@ abstract class MapReducerJdbc<X> extends MapReducer<X> implements CancelableProc
             }
 
             @Override
-            public Partition next() {
+            public DataCell next() {
               try {
                 if (!hasNext()) {
                   throw new NoSuchElementException();
                 }
-                Partition data = readOshCellRawData(oshCellsRawData);
+                DataCell data = readOshCellRawData(oshCellsRawData);
                 if (!oshCellsRawData.next()) {
                   oshCellsRawData.close();
                 }

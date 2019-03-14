@@ -1,9 +1,9 @@
-package org.heigit.bigspatialdata.oshdb.impl.partition.v0_5;
+package org.heigit.bigspatialdata.oshdb.impl.datacell.v0_5;
 
-import org.heigit.bigspatialdata.oshdb.partition.PartitionInfo;
+import org.heigit.bigspatialdata.oshdb.datacell.DataCellInfo;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 
-public abstract class GridOSHInfo implements PartitionInfo {
+public abstract class GridOSHInfo implements DataCellInfo {
   protected long id = -1;
   protected long level = -1;
   protected OSHDBBoundingBox bbox;

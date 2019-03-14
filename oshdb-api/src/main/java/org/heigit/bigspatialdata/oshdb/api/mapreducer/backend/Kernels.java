@@ -14,11 +14,11 @@ import org.heigit.bigspatialdata.oshdb.api.generic.function.SerializableFunction
 import org.heigit.bigspatialdata.oshdb.api.generic.function.SerializableSupplier;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMContribution;
 import org.heigit.bigspatialdata.oshdb.api.object.OSMEntitySnapshot;
-import org.heigit.bigspatialdata.oshdb.partition.Partition;
+import org.heigit.bigspatialdata.oshdb.datacell.DataCell;
 import org.heigit.bigspatialdata.oshdb.util.celliterator.CellIterator;
 
 class Kernels implements Serializable {
-  interface CellProcessor<S> extends SerializableBiFunction<Partition, CellIterator, S> {}
+  interface CellProcessor<S> extends SerializableBiFunction<DataCell, CellIterator, S> {}
 
   interface CancelableProcessStatus {
     boolean isActive();

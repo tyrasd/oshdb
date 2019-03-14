@@ -1,4 +1,4 @@
-package org.heigit.bigspatialdata.oshdb.impl.partition.v0_5;
+package org.heigit.bigspatialdata.oshdb.impl.datacell.v0_5;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
