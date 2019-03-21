@@ -136,7 +136,11 @@ public class ImportSplitDown {
               hRBC(bytes.length));
           Stopwatch stopwatch = Stopwatch.createStarted();
           out.writeLong(zId);
-          out.writeInt(bytes.length);
+          out.writeInt(bytes.length+index.length*4+4);
+          out.writeInt(index.length);
+          for(int o : index) {
+            out.writeInt(o);
+          }
           out.write(bytes);
 
           T grid = gridInstance.get(xyId, zoom, index, bytes);
