@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
@@ -217,7 +218,13 @@ public class Extract {
       if(!config.md5.trim().isEmpty())
         out.println("file.md5="+config.md5);
       
-      if(config.polyFile != null){
+      if(config.gjFile != null){
+    	  StringBuilder sb = new StringBuilder();
+    	  try (Stream<String> lines = Files.lines(config.gjFile)) {
+    		  lines.forEach(sb::append);
+    	  }
+    	  out.println("extract.region="+sb.toString());
+      }else if(config.polyFile != null){
         GeoJSON json = PolyFileReader.parse(config.polyFile);
         out.println("extract.region="+json.toString());
       }else if(config.bbox != null){

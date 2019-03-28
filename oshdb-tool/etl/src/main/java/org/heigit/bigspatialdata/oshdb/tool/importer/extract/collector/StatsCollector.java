@@ -89,6 +89,7 @@ public class StatsCollector {
 
       if (type == OSMType.NODE) {
         Node n = (Node) e;
+    
         minLon = Math.min(minLon, n.getLongitude());
         minLat = Math.min(minLat, n.getLatitude());
         maxLon = Math.max(maxLon, n.getLongitude());
