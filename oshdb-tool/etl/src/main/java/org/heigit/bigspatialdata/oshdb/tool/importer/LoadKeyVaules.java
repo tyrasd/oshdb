@@ -33,7 +33,7 @@ public class LoadKeyVaules implements Closeable {
 	public static final String TABLE_KEY = "key";
 	public static final String TABLE_KEYVALUE = "keyvalue";
 	public static final String TABLE_ROLE = "role";
-	public static final String TABLE_META = "meta";
+	public static final String TABLE_META = "metadata";
 
 	private static final int MAX_BATCH_SIZE = 100_000;
 
@@ -67,6 +67,13 @@ public class LoadKeyVaules implements Closeable {
 					+ "(id int primary key, txt varchar)");
 		}
 	}
+
+		private void prepareMeta(Connection conn) throws SQLException {
+					try(Statement stmt = conn.createStatement()){
+									stmt.executeUpdate("drop table if exists " + TABLE_META + "; create table if not exists " + TABLE_META
+																+ "(key varchar primary key, value varchar)");
+											}
+						}
 
 	@Override
 	public void close() throws IOException {
@@ -166,6 +173,7 @@ public class LoadKeyVaules implements Closeable {
 
 	  public void loadMeta(Path meta) {
 		  try(BufferedReader br = new BufferedReader(new FileReader(meta.toFile()))){
+			  prepareMeta(conn);
 	          String line = null;
 	          while((line = br.readLine()) != null){
 	            if(line.trim().isEmpty())
@@ -189,15 +197,11 @@ public class LoadKeyVaules implements Closeable {
 	          insertMeta.setString(2, "https://ohsome.org/copyrights");
 	          insertMeta.addBatch();
 	          
-	          insertMeta.setString(1, "attribution.url");
-	          insertMeta.setString(2, "https://ohsome.org/copyrights");
-	          insertMeta.addBatch();
-	          
 	          insertMeta.setString(1,"oshdb.maxzoom");
 	          insertMeta.setString(2, ""+14);
 	          insertMeta.addBatch();
 	          
-	          insertMeta.setString(1, "schema.flags");
+	          insertMeta.setString(1, "oshdb.flags");
 	          insertMeta.setString(2, "expand");
 	          insertMeta.addBatch();
 	          
@@ -259,6 +263,9 @@ public class LoadKeyVaules implements Closeable {
 			stopwatch.reset().start();
 			loader.loadRoles(workDirectory.resolve("extract_roles"));
 			System.out.println("roles done in " + stopwatch);
+			stopwatch.reset().start();
+			loader.loadMeta(workDirectory.resolve("extract_meta"));
+			System.out.println("meta donen in "+ stopwatch);
 
 		} catch (SQLException e) {
 			e.printStackTrace();

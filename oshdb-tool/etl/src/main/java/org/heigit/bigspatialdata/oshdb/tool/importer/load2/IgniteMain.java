@@ -28,11 +28,11 @@ public class IgniteMain {
 		cfg.setIgniteInstanceName("IgniteImportClientInstance");
 
 		try (Ignite ignite = Ignition.start(cfg)) {
-			//ignite.cluster().active(true);
+			ignite.cluster().active(true);
 			//ignite.cluster().active(false);
 			ignite.cacheNames().forEach(System.out::println);
 			
-			IgniteCache<Long, GridOSHWays> wayCache = ignite.cache("global_v4_grid_node");
+			IgniteCache<Long, GridOSHWays> wayCache = ignite.cache("global_v4_grid_way");
 			System.out.println(wayCache.size(CachePeekMode.PRIMARY));
 				
 		//	ignite.destroyCaches(Lists.newArrayList("planet_grid_relation","planet_grid_node","planet_grid_way"));

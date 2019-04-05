@@ -24,6 +24,9 @@ public class ExtractArgs {
   @Parameter(names = {"--md5"}, description="MD5 checksum")
   public String md5 = "";
   
+  @Parameter(names = { "--geojson"}, description="extract_region", validateWith = FileExistValidator.class)
+  public Path gjFile;
+
   @Parameter(names = {"--poly"}, description="extract region",  validateWith = FileExistValidator.class)
   public Path polyFile;
   

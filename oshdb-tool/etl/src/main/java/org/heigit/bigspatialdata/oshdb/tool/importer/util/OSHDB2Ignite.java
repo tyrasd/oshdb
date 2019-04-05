@@ -55,8 +55,12 @@ public class OSHDB2Ignite {
 
       try (Statement stmt = oshdb.createStatement()) {
 
-        OSHDB2Ignite.<GridOSHNodes>doGridImport(ignite, stmt, TableNames.T_NODES, prefix);
-        OSHDB2Ignite.<GridOSHWays>doGridImport(ignite, stmt, TableNames.T_WAYS, prefix);
+//	OSHDB2Ignite.doCacheDestroy(ignite, stmt, TableNames.T_NODES, prefix);
+//        OSHDB2Ignite.doCacheDestroy(ignite, stmt, TableNames.T_WAYS, prefix);
+//        OSHDB2Ignite.doCacheDestroy(ignite, stmt, TableNames.T_RELATIONS, prefix);
+
+//        OSHDB2Ignite.<GridOSHNodes>doGridImport(ignite, stmt, TableNames.T_NODES, prefix);
+//        OSHDB2Ignite.<GridOSHWays>doGridImport(ignite, stmt, TableNames.T_WAYS, prefix);
         OSHDB2Ignite.<GridOSHRelations>doGridImport(ignite, stmt, TableNames.T_RELATIONS, prefix);
 
       } catch (SQLException ex) {
@@ -70,17 +74,24 @@ public class OSHDB2Ignite {
 
   }
 
-  private static <T> void doGridImport(Ignite ignite, Statement stmt, TableNames cacheName, String prefix) {
+  private static void doCacheDestroy(Ignite ignite, Statement stmt, TableNames cacheName, String prefix) {
     final String cacheWithPrefix = cacheName.toString(prefix);
     ignite.destroyCache(cacheWithPrefix);
+  }
+
+
+  private static <T> void doGridImport(Ignite ignite, Statement stmt, TableNames cacheName, String prefix) {
+    final String cacheWithPrefix = cacheName.toString(prefix);
     
     CacheConfiguration<Long, T> cacheCfg = new CacheConfiguration<>(cacheWithPrefix);
     cacheCfg.setBackups(0);
     cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+    cacheCfg.setCopyOnRead(false);
     
     
     
     IgniteCache<Long, T> cache = ignite.getOrCreateCache(cacheCfg);
+
     cache.clear();    
     ignite.cluster().disableWal(cacheWithPrefix);
     
@@ -97,7 +108,7 @@ public class OSHDB2Ignite {
         case T_RELATIONS:
           tableName = TableNames.T_RELATIONS.toString();
       }
-      try (final ResultSet rst = stmt.executeQuery("select level, id, seq, data from " + tableName)) {
+      try (final ResultSet rst = stmt.executeQuery("select level, id,seq, data from " + tableName)) {
         int cnt = 0;
         System.out.println(LocalDateTime.now() + " START loading " + tableName + " into " + cache.getName() + " on Ignite");
         while (rst.next()) {
@@ -111,7 +122,7 @@ public class OSHDB2Ignite {
           @SuppressWarnings("unchecked")
           final T grid = (T) ois.readObject();
           streamer.addData(levelId, grid);
-          // if (++cnt % 10 == 0) streamer.flush();
+          if (++cnt % 10 == 0) streamer.flush();
         }
         System.out.println(LocalDateTime.now() + " FINISHED loading " + tableName + " into " + cache.getName() + " on Ignite");
       } catch (IOException | ClassNotFoundException | SQLException e) {
