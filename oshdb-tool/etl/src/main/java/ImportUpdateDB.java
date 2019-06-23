@@ -10,9 +10,11 @@ import org.heigit.bigspatialdata.oshdb.osh.OSHRelation;
 import org.heigit.bigspatialdata.oshdb.osh.OSHWay;
 import org.heigit.bigspatialdata.oshdb.tool.importer.cli.validator.DirExistValidator;
 import org.heigit.bigspatialdata.oshdb.util.bytearray.ByteArrayOutputWrapper;
+import org.springframework.util.StopWatch;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.google.common.base.Stopwatch;
 import com.google.common.io.CountingOutputStream;
 
 public class ImportUpdateDB extends Import {
@@ -47,9 +49,20 @@ public class ImportUpdateDB extends Import {
     Files.createDirectories(outDir);
     
     ByteArrayOutputWrapper encode = new ByteArrayOutputWrapper(1024);
+    Stopwatch stopwatch = Stopwatch.createUnstarted();
+    
+    System.out.print("create relation db");
+    stopwatch.reset();
     write("relation", workDir, outDir, encode, (data) -> OSHRelation.instance(data, 0, data.length).getId());
+    System.out.println(" ... done. "+ stopwatch);
+    System.out.print("create way db");
+    stopwatch.reset();
     write("way", workDir, outDir, encode, (data) -> OSHWay.instance(data, 0, data.length).getId());
+    System.out.println(" ... done. "+ stopwatch);
+    System.out.print("create node db");
+    stopwatch.reset();
     write("node", workDir, outDir, encode, (data) -> OSHNode.instance(data, 0, data.length).getId());
+    System.out.println(" ... done. "+ stopwatch);  
   }
 
   @FunctionalInterface
