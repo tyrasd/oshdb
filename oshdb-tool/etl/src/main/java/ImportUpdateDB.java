@@ -49,15 +49,15 @@ public class ImportUpdateDB extends Import {
     ByteArrayOutputWrapper encode = new ByteArrayOutputWrapper(1024);
     Stopwatch stopwatch = Stopwatch.createUnstarted();
     
-    System.out.print("create relation db ... ");
+    System.out.println("create relation db ... ");
     stopwatch.reset();
     write("relation", workDir, outDir, encode, (data) -> OSHRelation.instance(data, 0, data.length).getId());
     System.out.println("done. "+ stopwatch);
-    System.out.print("create way db ... ");
+    System.out.println("create way db ... ");
     stopwatch.reset();
     write("way", workDir, outDir, encode, (data) -> OSHWay.instance(data, 0, data.length).getId());
     System.out.println("done. "+ stopwatch);
-    System.out.print("create node db ... ");
+    System.out.println("create node db ... ");
     stopwatch.reset();
     write("node", workDir, outDir, encode, (data) -> OSHNode.instance(data, 0, data.length).getId());
     System.out.println("done. "+ stopwatch);  
@@ -73,6 +73,7 @@ public class ImportUpdateDB extends Import {
     try(RandomAccessFile index = new RandomAccessFile(outDir.resolve(type+".idx").toString(), "rw");
        RandomAccessFile data = new RandomAccessFile(outDir.resolve(type+".data").toString(),"rw")){
       data.write(0);
+      System.out.println("zoom,xyid,count,bytes,hrbc,time");
       stream(type, workDir, (zId, buffers) -> {
         final int zoom = ZGrid.getZoom(zId);
         long xyId = getXYFromZId(zId);
