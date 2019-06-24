@@ -18,6 +18,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.heigit.bigspatialdata.oshdb.grid.GridOSHNodes;
 import org.heigit.bigspatialdata.oshdb.grid.GridOSHRelations;
 import org.heigit.bigspatialdata.oshdb.grid.GridOSHWays;
@@ -176,6 +177,10 @@ public class ImportSplitDown {
     cacheCfg.setBackups(0);
     cacheCfg.setCacheMode(CacheMode.PARTITIONED);
     cacheCfg.setCopyOnRead(false);
+    RendezvousAffinityFunction affFunc = new RendezvousAffinityFunction();
+    affFunc.setExcludeNeighbors(true);
+    affFunc.setPartitions(10_000);
+    cacheCfg.setAffinity(affFunc);
 
     IgniteCache<Long, T> cache = ignite.getOrCreateCache(cacheCfg);
 
