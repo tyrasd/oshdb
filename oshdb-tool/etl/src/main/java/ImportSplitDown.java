@@ -25,6 +25,7 @@ import org.heigit.bigspatialdata.oshdb.grid.GridOSHWays;
 import org.heigit.bigspatialdata.oshdb.index.XYGrid;
 import org.heigit.bigspatialdata.oshdb.index.zfc.ZGrid;
 import org.heigit.bigspatialdata.oshdb.tool.importer.cli.validator.DirExistValidator;
+import org.heigit.bigspatialdata.oshdb.tool.importer.util.ProgressUtil;
 import org.heigit.bigspatialdata.oshdb.util.CellId;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import com.beust.jcommander.JCommander;
@@ -43,9 +44,6 @@ public class ImportSplitDown {
         description = "path to store the result files.", validateWith = DirExistValidator.class,
         required = true, order = 10)
     public Path workDir;
-
-    @Parameter(names = {"--out"}, description = "output path", required = true)
-    public Path output;
 
     @Parameter(names = {"-ignite", "-igniteConfig", "-icfg"},
         description = "Path ot ignite-config.xml", required = true, order = 1)
@@ -72,7 +70,6 @@ public class ImportSplitDown {
     final Path workDir = config.workDir;
     final Path igniteConfig = config.ignitexml;
     final String prefix = config.prefix;
-    final Path outDir = config.output;
 
     final boolean disableWal = true;
 
@@ -81,11 +78,11 @@ public class ImportSplitDown {
       ignite.cluster().active(true);
       try {
 
-        stream("node", prefix, workDir, ignite, disableWal, outDir,
+        stream("node", prefix, workDir, ignite, disableWal,
             (xyId, zoom, index, data) -> new GridOSHNodes(xyId, zoom, 0L, 0L, 0L, 0L, index, data));
-        stream("way", prefix, workDir, ignite, disableWal, outDir,
+        stream("way", prefix, workDir, ignite, disableWal,
             (xyId, zoom, index, data) -> new GridOSHWays(xyId, zoom, 0L, 0L, 0L, 0L, index, data));
-        stream("relation", prefix, workDir, ignite, disableWal, outDir, (xyId, zoom, index,
+        stream("relation", prefix, workDir, ignite, disableWal, (xyId, zoom, index,
             data) -> new GridOSHRelations(xyId, zoom, 0L, 0L, 0L, 0L, index, data));
 
       } finally {
@@ -104,16 +101,13 @@ public class ImportSplitDown {
   }
 
   private static <T> void stream(String type, String prefix, Path workDir, Ignite ignite,
-      boolean disableWal, Path outDir, GridInstance<T> gridInstance) throws IOException {
+      boolean disableWal, GridInstance<T> gridInstance) throws IOException {
     
     final String cacheName = prefix + "_grid_" + type;
     System.out.println("# import "+type+" to "+cacheName);
     System.out.println("#");
     System.out.println("zoom,xyid,count,bytes,hrbc,time");
-    try (
-        DataOutputStream out = new DataOutputStream(
-            MoreFiles.asByteSink(outDir.resolve(type + ".data")).openBufferedStream());
-        IgniteDataStreamer<Long, T> stream = openStreamer(ignite, cacheName, disableWal)) {
+    try (IgniteDataStreamer<Long, T> stream = openStreamer(ignite, cacheName, disableWal)) {
       Path typeIndex = workDir.resolve(type + ".index");
       Path typeData = workDir.resolve(type + ".data");
       load(typeIndex, typeData, (zId, buffers) -> {
@@ -133,17 +127,9 @@ public class ImportSplitDown {
           }
           byte[] bytes = aux.toByteArray();
 
-          System.out.printf("%2d,%12d,%5d,%10d,\"%s\"", zoom, xyId, buffers.size(), bytes.length,
-              hRBC(bytes.length));
+          System.out.printf("%2d,%12d,%5d,%10d,\"%s\"", zoom, xyId, buffers.size(), bytes.length, ProgressUtil.hRBC(bytes.length));
+          
           Stopwatch stopwatch = Stopwatch.createStarted();
-          out.writeLong(zId);
-          out.writeInt(bytes.length+index.length*4+4);
-          out.writeInt(index.length);
-          for(int o : index) {
-            out.writeInt(o);
-          }
-          out.write(bytes);
-
           T grid = gridInstance.get(xyId, zoom, index, bytes);
           final long levelId = CellId.getLevelId(zoom, xyId);
           stream.addData(levelId, grid);
@@ -253,7 +239,7 @@ public class ImportSplitDown {
     while (!list.isEmpty()) {
       IdOffsetList entry = list.remove();
       long zId = entry.zId;
-      int zoom = ZGrid.getZoom(zId);
+      //int zoom = ZGrid.getZoom(zId);
 
       List<OffsetSize> offsets = entry.offsets;
       long size = offsets.stream().mapToLong(os -> os.size).sum();
@@ -379,13 +365,6 @@ public class ImportSplitDown {
     }
   }
 
-  public static String hRBC(long bytes) {
-    final int unit = 1024;
-    if (bytes < unit)
-      return bytes + " B";
-    int exp = (int) (Math.log(bytes) / Math.log(unit));
-    final String pre = "" + "kMGTPE".charAt(exp - 1);
-    return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
-  }
+ 
 }
 
