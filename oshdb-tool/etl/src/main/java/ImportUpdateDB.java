@@ -71,7 +71,8 @@ public class ImportUpdateDB extends Import {
   private static void write(String type, Path workDir, Path outDir, ByteArrayOutputWrapper encode,
       ToLongFunctionIO<byte[]> getId) throws IOException, FileNotFoundException {
     try(RandomAccessFile index = new RandomAccessFile(outDir.resolve(type+".idx").toString(), "rw");
-       RandomAccessFile data = new RandomAccessFile(outDir.resolve(type+".data").toString(),"rw")){    
+       RandomAccessFile data = new RandomAccessFile(outDir.resolve(type+".data").toString(),"rw")){
+      data.write(0);
       stream(type, workDir, (zId, buffers) -> {
         final int zoom = ZGrid.getZoom(zId);
         long xyId = getXYFromZId(zId);
