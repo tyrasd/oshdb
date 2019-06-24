@@ -3,9 +3,11 @@ package org.heigit.bigspatialdata.oshdb.api.db;
 import com.google.common.base.Joiner;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -17,8 +19,13 @@ import org.heigit.bigspatialdata.oshdb.api.mapreducer.backend.MapReducerJdbcMult
 import org.heigit.bigspatialdata.oshdb.api.mapreducer.backend.MapReducerJdbcSinglethread;
 import org.heigit.bigspatialdata.oshdb.api.object.OSHDBMapReducible;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
+import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
+import org.heigit.bigspatialdata.oshdb.util.OSHDBMetadata;
+import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.util.TableNames;
 import org.heigit.bigspatialdata.oshdb.util.exceptions.OSHDBTableNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * OSHDB database backend connector to a JDBC database file.
@@ -27,6 +34,7 @@ public class OSHDBJdbc extends OSHDBDatabase implements AutoCloseable {
 
   protected Connection connection;
   private boolean useMultithreading = true;
+  private static final Logger LOG = LoggerFactory.getLogger(OSHDBJdbc.class);
 
   public OSHDBJdbc(String classToLoad, String jdbcString)
       throws SQLException, ClassNotFoundException {
@@ -79,21 +87,41 @@ public class OSHDBJdbc extends OSHDBDatabase implements AutoCloseable {
   }
 
   @Override
-  public String metadata(String property) {
-    try {
-      PreparedStatement stmt = connection.prepareStatement(
-          "SELECT value from " + TableNames.T_METADATA.toString(this.prefix()) + " where key=?"
-      );
-      stmt.setString(1, property);
-      ResultSet result = stmt.executeQuery();
-      if (result.next()) {
-        return result.getString(1);
-      } else {
-        return null;
-      }
-    } catch (SQLException ignored) {
-      return null;
+  public OSHDBMetadata getMetadata() {
+    OSHDBTimestamp startTime;
+    OSHDBTimestamp endTime;
+    OSHDBBoundingBox bbx;
+    try (Statement stmt = connection.createStatement()) {
+      //
+      stmt.execute(
+          "SELECT value from " + TableNames.T_METADATA.toString(this.prefix()) + " where key='data.starttime';");
+      ResultSet resultSet = stmt.getResultSet();
+      String string = resultSet.getString(1);
+      LocalDateTime parse = LocalDateTime.parse(string);
+      startTime = new OSHDBTimestamp(parse.toEpochSecond(ZoneOffset.UTC));
+      //
+      stmt.execute(
+          "SELECT value from " + TableNames.T_METADATA.toString(this.prefix()) + " where key='data.endtime';");
+      resultSet = stmt.getResultSet();
+      string = resultSet.getString(1);
+      parse = LocalDateTime.parse(string);
+      endTime = new OSHDBTimestamp(parse.toEpochSecond(ZoneOffset.UTC));
+      //
+      stmt.execute(
+          "SELECT value from " + TableNames.T_METADATA.toString(this.prefix()) + " where key='data.bbox';");
+      resultSet = stmt.getResultSet();
+      string = resultSet.getString(1);
+      String[] split = string.split(",");
+      bbx = new OSHDBBoundingBox(Double.parseDouble(split[0]),
+          Double.parseDouble(split[1]),
+          Double.parseDouble(split[2]),
+          Double.parseDouble(split[3]));
+      
+    } catch (SQLException ex) {
+      LOG.error("Could not fetch Metadata", ex);
+      return OSHDBMetadata.INVALID;
     }
+    return new OSHDBMetadata(startTime, endTime, bbx);
   }
 
   public Connection getConnection() {

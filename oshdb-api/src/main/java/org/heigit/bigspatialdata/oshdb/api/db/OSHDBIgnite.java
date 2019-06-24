@@ -15,6 +15,7 @@ import org.heigit.bigspatialdata.oshdb.api.mapreducer.backend.MapReducerIgniteLo
 import org.heigit.bigspatialdata.oshdb.api.mapreducer.backend.MapReducerIgniteScanQuery;
 import org.heigit.bigspatialdata.oshdb.api.object.OSHDBMapReducible;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
+import org.heigit.bigspatialdata.oshdb.util.OSHDBMetadata;
 import org.heigit.bigspatialdata.oshdb.util.TableNames;
 import org.heigit.bigspatialdata.oshdb.util.exceptions.OSHDBTableNotFoundException;
 
@@ -91,9 +92,9 @@ public class OSHDBIgnite extends OSHDBDatabase implements AutoCloseable {
   }
 
   @Override
-  public String metadata(String property) {
+  public OSHDBMetadata getMetadata() {
     // todo: implement this
-    return null;
+    return OSHDBMetadata.INVALID;
   }
 
   public Ignite getIgnite() {

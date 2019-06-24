@@ -1,5 +1,7 @@
 package org.heigit.bigspatialdata.oshdb;
 
+import org.heigit.bigspatialdata.oshdb.util.OSHDBMetadata;
+
 public abstract class OSHDB {
 
   public static final int MAXZOOM = 15;
@@ -11,11 +13,8 @@ public abstract class OSHDB {
   /**
    * Returns various metadata properties of this OSHDB instance
    *
-   * For example, metadata("extract.region") returns the geographic region for which the current
-   * oshdb extract has been generated in GeoJSON format.
    *
-   * @param property the metadata property to request
-   * @return the value of the requested metadata field
+   * @return the org.heigit.bigspatialdata.oshdb.util.OSHDBMetadata
    */
-  public abstract String metadata(String property);
+  public abstract OSHDBMetadata getMetadata();
 }

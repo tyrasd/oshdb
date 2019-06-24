@@ -4,6 +4,7 @@ import java.util.OptionalLong;
 import org.heigit.bigspatialdata.oshdb.OSHDB;
 import org.heigit.bigspatialdata.oshdb.api.mapreducer.MapReducer;
 import org.heigit.bigspatialdata.oshdb.api.object.OSHDBMapReducible;
+import org.heigit.bigspatialdata.oshdb.util.OSHDBMetadata;
 import org.heigit.bigspatialdata.oshdb.util.exceptions.OSHDBTimeoutException;
 
 /**
@@ -26,9 +27,11 @@ public abstract class OSHDBDatabase extends OSHDB implements AutoCloseable {
   /**
    * Returns metadata about the given OSHDB.
    *
-   * <p>For example copyright information, currentness of the data, spatial extent, etc.</p>
+   * <p>For example currentness of the data, spatial extent, etc.</p>
+   * @return A metadata-Object
    */
-  public abstract String metadata(String property);
+  @Override
+  public abstract OSHDBMetadata getMetadata();
 
   /**
    * Sets the "table/cache" name prefix to be used with this oshdb.
