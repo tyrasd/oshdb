@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.heigit.bigspatialdata.oshdb.OSHDB;
 import org.heigit.bigspatialdata.oshdb.osh.OSHEntities;
 import org.heigit.bigspatialdata.oshdb.osh.OSHEntity;
 import org.heigit.bigspatialdata.oshdb.osh.OSHNode;
@@ -23,7 +24,6 @@ import org.heigit.bigspatialdata.oshdb.osm.OSMNode;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.osm.OSMWay;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.util.bytearray.ByteArrayOutputWrapper;
 import org.heigit.bigspatialdata.oshdb.util.bytearray.ByteArrayWrapper;
 
@@ -181,7 +181,7 @@ public class OSHWayImpl extends OSHEntityImpl implements OSHWay, Iterable<OSMWay
               }
             }
 
-            return new OSMWay(id, version, new OSHDBTimestamp(baseTimestamp + timestamp), changeset,
+            return new OSMWay(id, version, OSHDB.timestamp(baseTimestamp + timestamp), changeset,
                 userId, keyValues, members);
 
           } catch (IOException e) {

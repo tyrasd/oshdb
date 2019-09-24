@@ -371,14 +371,14 @@ public abstract class MapReducer<X> implements
     SortedSet<OSHDBTimestamp> timestamps = new TreeSet<>();
     try {
       timestamps.add(
-          new OSHDBTimestamp(ISODateTimeParser.parseISODateTime(isoDateFirst).toEpochSecond())
+          OSHDB.timestamp(ISODateTimeParser.parseISODateTime(isoDateFirst).toEpochSecond())
       );
       timestamps.add(
-          new OSHDBTimestamp(ISODateTimeParser.parseISODateTime(isoDateSecond).toEpochSecond())
+          OSHDB.timestamp(ISODateTimeParser.parseISODateTime(isoDateSecond).toEpochSecond())
       );
       for (String isoDate : isoDateMore) {
         timestamps.add(
-            new OSHDBTimestamp(ISODateTimeParser.parseISODateTime(isoDate).toEpochSecond())
+            OSHDB.timestamp(ISODateTimeParser.parseISODateTime(isoDate).toEpochSecond())
         );
       }
     } catch (Exception e) {

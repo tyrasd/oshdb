@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import org.heigit.bigspatialdata.oshdb.OSHDB;
 import org.heigit.bigspatialdata.oshdb.grid.GridOSHEntity;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
@@ -60,8 +61,8 @@ public class IterateAllTest {
       ).readObject();
 
       TreeSet<OSHDBTimestamp> timestamps = new TreeSet<>();
-      timestamps.add(new OSHDBTimestamp(1325376000L));
-      timestamps.add(new OSHDBTimestamp(1516375698L));
+      timestamps.add(OSHDB.timestamp(1325376000L));
+      timestamps.add(OSHDB.timestamp(1516375698L));
 
       List<IterateAllEntry> result = (new CellIterator(
           timestamps,

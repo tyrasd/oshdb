@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.LongFunction;
-
+import org.heigit.bigspatialdata.oshdb.OSHDB;
 import org.heigit.bigspatialdata.oshdb.osm.OSMNode;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.tool.importer.transform.oshdb.TransformOSHNode;
@@ -88,7 +88,7 @@ public class TransformerNode extends Transformer {
   private OSMNode getNode(Node entity) {
     return new OSMNode(entity.getId(), //
         modifiedVersion(entity), //
-        new OSHDBTimestamp(entity.getTimestamp()), //
+        OSHDB.timestamp(entity.getTimestamp()), //
         entity.getChangeset(), //
         entity.getUserId(), //
         getKeyValue(entity.getTags()), //

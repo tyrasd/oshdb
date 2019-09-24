@@ -1,5 +1,6 @@
 package org.heigit.bigspatialdata.oshdb.util.geometry;
 
+import org.heigit.bigspatialdata.oshdb.OSHDB;
 import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
@@ -34,7 +35,7 @@ public class OSHDBGeometryBuilderTest {
 
   private OSHDBTimestamp toOSHDBTimestamp(String timeString) {
     try {
-      return new OSHDBTimestamp(
+      return OSHDB.timestamp(
           ISODateTimeParser.parseISODateTime(timeString).toEpochSecond()
       );
     } catch (Exception e) {

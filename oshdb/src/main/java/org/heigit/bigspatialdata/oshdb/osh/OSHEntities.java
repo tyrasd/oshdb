@@ -14,6 +14,7 @@ import java.util.TreeSet;
 import java.util.Map.Entry;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import org.heigit.bigspatialdata.oshdb.OSHDB;
 import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
 import org.heigit.bigspatialdata.oshdb.osm.OSMMember;
 import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
@@ -334,7 +335,7 @@ public abstract class OSHEntities {
 
     Map<OSHNode, LinkedList<OSHDBTimestamp>> childEntityTs = new TreeMap<>();
 
-    OSHDBTimestamp nextT = new OSHDBTimestamp(Long.MAX_VALUE);
+    OSHDBTimestamp nextT = OSHDB.timestamp(Long.MAX_VALUE);
     for (OSMWay osm : versions) {
       OSHDBTimestamp thisT = osm.getTimestamp();
       if (!osm.isVisible() || (osmEntityFilter != null && !osmEntityFilter.test(osm))) {
@@ -413,7 +414,7 @@ public abstract class OSHEntities {
     }
 
     Map<OSHEntity, LinkedList<OSHDBTimestamp>> childEntityTs = new TreeMap<>();
-    OSHDBTimestamp nextT = new OSHDBTimestamp(Long.MAX_VALUE);
+    OSHDBTimestamp nextT = OSHDB.timestamp(Long.MAX_VALUE);
     for (OSMRelation osmRelation : versions) {
       OSHDBTimestamp thisT = osmRelation.getTimestamp();
       if (!osmRelation.isVisible() ||

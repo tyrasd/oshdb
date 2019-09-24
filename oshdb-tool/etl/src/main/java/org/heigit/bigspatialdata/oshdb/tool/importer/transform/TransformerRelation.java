@@ -7,7 +7,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongFunction;
-
+import org.heigit.bigspatialdata.oshdb.OSHDB;
 import org.heigit.bigspatialdata.oshdb.osm.OSMMember;
 import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
@@ -126,7 +126,7 @@ public class TransformerRelation extends Transformer {
   private OSMRelation getOSM(Relation entity) {
     return new OSMRelation(entity.getId() //
         , modifiedVersion(entity) //
-        , new OSHDBTimestamp(entity.getTimestamp()) //
+        , OSHDB.timestamp(entity.getTimestamp()) //
         , entity.getChangeset() //
         , entity.getUserId() //
         , getKeyValue(entity.getTags()) //

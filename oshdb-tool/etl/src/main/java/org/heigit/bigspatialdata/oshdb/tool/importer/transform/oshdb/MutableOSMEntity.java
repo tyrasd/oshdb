@@ -1,5 +1,7 @@
 package org.heigit.bigspatialdata.oshdb.tool.importer.transform.oshdb;
 
+import org.heigit.bigspatialdata.oshdb.OSHDB;
+import org.heigit.bigspatialdata.oshdb.util.MutableOSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 
 public class MutableOSMEntity implements OSMEntity {
@@ -8,7 +10,7 @@ public class MutableOSMEntity implements OSMEntity {
 
   private int version;
   private boolean visible;
-  private OSHDBTimestamp timestamp = new OSHDBTimestamp(0L);
+  private MutableOSHDBTimestamp timestamp = OSHDB.mutableTimestamp(0L);
   private long changeset;
   private int userId;
   private int[] tags;
@@ -55,7 +57,7 @@ public class MutableOSMEntity implements OSMEntity {
   }
 
   public void setTimestamp(OSHDBTimestamp timestamp) {
-    this.timestamp = timestamp;
+    this.timestamp = OSHDB.mutableTimestamp(timestamp.getRawUnixTimestamp());
   }
   
   public void setTimestamp(long timestamp) {

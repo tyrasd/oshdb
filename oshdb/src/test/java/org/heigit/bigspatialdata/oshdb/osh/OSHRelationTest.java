@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import org.heigit.bigspatialdata.oshdb.OSHDB;
 import org.heigit.bigspatialdata.oshdb.impl.osh.OSHNodeImpl;
 import org.heigit.bigspatialdata.oshdb.impl.osh.OSHRelationImpl;
 import org.heigit.bigspatialdata.oshdb.impl.osh.OSHWayImpl;
@@ -24,19 +25,19 @@ import com.google.common.collect.Iterables;
 public class OSHRelationTest {
 
   OSHNode node100 = buildHOSMNode(
-          Arrays.asList(new OSMNode(100l, 1, new OSHDBTimestamp(1l), 0l, 123, new int[]{1, 2}, 494094984l, 86809727l)));
+          Arrays.asList(new OSMNode(100l, 1, OSHDB.timestamp(1l), 0l, 123, new int[]{1, 2}, 494094984l, 86809727l)));
   OSHNode node102 = buildHOSMNode(
-          Arrays.asList(new OSMNode(102l, 1, new OSHDBTimestamp(1l), 0l, 123, new int[]{2, 1}, 494094984l, 86809727l)));
+          Arrays.asList(new OSMNode(102l, 1, OSHDB.timestamp(1l), 0l, 123, new int[]{2, 1}, 494094984l, 86809727l)));
   OSHNode node104 = buildHOSMNode(
-          Arrays.asList(new OSMNode(104l, 1, new OSHDBTimestamp(1l), 0l, 123, new int[]{2, 4}, 494094984l, 86809727l)));
+          Arrays.asList(new OSMNode(104l, 1, OSHDB.timestamp(1l), 0l, 123, new int[]{2, 4}, 494094984l, 86809727l)));
 
-  OSHWay way200 = buildHOSMWay(Arrays.asList(new OSMWay(200, 1, new OSHDBTimestamp(3333l), 4444l, 23, new int[]{1, 2}, new OSMMember[]{new OSMMember(100, OSMType.NODE, 0), new OSMMember(104, OSMType.NODE, 0)})), Arrays.asList(node100, node104));
-  OSHWay way202 = buildHOSMWay(Arrays.asList(new OSMWay(202, 1, new OSHDBTimestamp(3333l), 4444l, 23, new int[]{1, 2}, new OSMMember[]{new OSMMember(100, OSMType.NODE, 0), new OSMMember(102, OSMType.NODE, 0)})), Arrays.asList(node100, node102));
+  OSHWay way200 = buildHOSMWay(Arrays.asList(new OSMWay(200, 1, OSHDB.timestamp(3333l), 4444l, 23, new int[]{1, 2}, new OSMMember[]{new OSMMember(100, OSMType.NODE, 0), new OSMMember(104, OSMType.NODE, 0)})), Arrays.asList(node100, node104));
+  OSHWay way202 = buildHOSMWay(Arrays.asList(new OSMWay(202, 1, OSHDB.timestamp(3333l), 4444l, 23, new int[]{1, 2}, new OSMMember[]{new OSMMember(100, OSMType.NODE, 0), new OSMMember(102, OSMType.NODE, 0)})), Arrays.asList(node100, node102));
 
   @Test
   public void testGetNodes() {
     List<OSMRelation> versions = new ArrayList<>();
-    versions.add(new OSMRelation(300, 1, new OSHDBTimestamp(3333l), 4444l, 23, new int[]{}, new OSMMember[]{new OSMMember(100, OSMType.NODE, 0), new OSMMember(102, OSMType.NODE, 0), new OSMMember(104, OSMType.NODE, 0)}));
+    versions.add(new OSMRelation(300, 1, OSHDB.timestamp(3333l), 4444l, 23, new int[]{}, new OSMMember[]{new OSMMember(100, OSMType.NODE, 0), new OSMMember(102, OSMType.NODE, 0), new OSMMember(104, OSMType.NODE, 0)}));
 
     try {
       OSHRelation hrelation = OSHRelationImpl.build(versions, Arrays.asList(node100, node102, node104), Collections.emptyList());
@@ -53,7 +54,7 @@ public class OSHRelationTest {
   @Test
   public void testWithMissingNode() {
     List<OSMRelation> versions = new ArrayList<>();
-    versions.add(new OSMRelation(300, 1, new OSHDBTimestamp(3333l), 4444l, 23, new int[]{}, new OSMMember[]{new OSMMember(100, OSMType.NODE, 0), new OSMMember(102, OSMType.NODE, 0), new OSMMember(104, OSMType.NODE, 0)}));
+    versions.add(new OSMRelation(300, 1, OSHDB.timestamp(3333l), 4444l, 23, new int[]{}, new OSMMember[]{new OSMMember(100, OSMType.NODE, 0), new OSMMember(102, OSMType.NODE, 0), new OSMMember(104, OSMType.NODE, 0)}));
 
     try {
       OSHRelation hrelation = OSHRelationImpl.build(versions, Arrays.asList(node100, node104), Collections.emptyList());
@@ -86,7 +87,7 @@ public class OSHRelationTest {
   @Test
   public void testGetWays() {
     List<OSMRelation> versions = new ArrayList<>();
-    versions.add(new OSMRelation(300, 1, new OSHDBTimestamp(3333l), 4444l, 23, new int[]{}, new OSMMember[]{new OSMMember(200, OSMType.WAY, 0), new OSMMember(202, OSMType.WAY, 0)}));
+    versions.add(new OSMRelation(300, 1, OSHDB.timestamp(3333l), 4444l, 23, new int[]{}, new OSMMember[]{new OSMMember(200, OSMType.WAY, 0), new OSMMember(202, OSMType.WAY, 0)}));
 
     try {
       OSHRelation hrelation = OSHRelationImpl.build(versions, Collections.emptyList(), Arrays.asList(way200, way202), 200l, 1000l, 1000l, 1000l);
@@ -103,7 +104,7 @@ public class OSHRelationTest {
   @Test
   public void testCompact() {
     List<OSMRelation> versions = new ArrayList<>();
-    versions.add(new OSMRelation(300, 1, new OSHDBTimestamp(3333l), 4444l, 23, new int[]{}, new OSMMember[]{new OSMMember(100, OSMType.NODE, 0), new OSMMember(102, OSMType.NODE, 0), new OSMMember(104, OSMType.NODE, 0), new OSMMember(200, OSMType.WAY, 0), new OSMMember(202, OSMType.WAY, 0)}));
+    versions.add(new OSMRelation(300, 1, OSHDB.timestamp(3333l), 4444l, 23, new int[]{}, new OSMMember[]{new OSMMember(100, OSMType.NODE, 0), new OSMMember(102, OSMType.NODE, 0), new OSMMember(104, OSMType.NODE, 0), new OSMMember(200, OSMType.WAY, 0), new OSMMember(202, OSMType.WAY, 0)}));
 
     try {
       OSHRelation hrelation = OSHRelationImpl.build(versions, Arrays.asList(node100, node102, node104), Arrays.asList(way200, way202), 200l, 1000l, 1000l, 1000l);
@@ -141,32 +142,32 @@ public class OSHRelationTest {
   @Test
   public void testGetModificationTimestamps() throws IOException {
     List<OSMNode> n1versions = new ArrayList<>();
-    n1versions.add(new OSMNode(123l, 2, new OSHDBTimestamp(2l), 12l, 0, new int[]{}, 0, 0));
-    n1versions.add(new OSMNode(123l, 1, new OSHDBTimestamp(1l), 11l, 0, new int[]{}, 0, 0));
+    n1versions.add(new OSMNode(123l, 2, OSHDB.timestamp(2l), 12l, 0, new int[]{}, 0, 0));
+    n1versions.add(new OSMNode(123l, 1, OSHDB.timestamp(1l), 11l, 0, new int[]{}, 0, 0));
     OSHNode hnode1 = OSHNodeImpl.build(n1versions);
     List<OSMNode> n2versions = new ArrayList<>();
-    n2versions.add(new OSMNode(124l, 4, new OSHDBTimestamp(12l), 24l, 0, new int[]{}, 0, 0));
-    n2versions.add(new OSMNode(124l, 3, new OSHDBTimestamp(9l), 23l, 0, new int[]{}, 0, 0));
-    n2versions.add(new OSMNode(124l, 2, new OSHDBTimestamp(4l), 22l, 0, new int[]{}, 0, 0));
-    n2versions.add(new OSMNode(124l, 1, new OSHDBTimestamp(3l), 21l, 0, new int[]{}, 0, 0));
+    n2versions.add(new OSMNode(124l, 4, OSHDB.timestamp(12l), 24l, 0, new int[]{}, 0, 0));
+    n2versions.add(new OSMNode(124l, 3, OSHDB.timestamp(9l), 23l, 0, new int[]{}, 0, 0));
+    n2versions.add(new OSMNode(124l, 2, OSHDB.timestamp(4l), 22l, 0, new int[]{}, 0, 0));
+    n2versions.add(new OSMNode(124l, 1, OSHDB.timestamp(3l), 21l, 0, new int[]{}, 0, 0));
     OSHNode hnode2 = OSHNodeImpl.build(n2versions);
     List<OSMNode> n3versions = new ArrayList<>();
-    n3versions.add(new OSMNode(125l, 3, new OSHDBTimestamp(11l), 34l, 0, new int[]{}, 0, 0));
-    n3versions.add(new OSMNode(125l, 2, new OSHDBTimestamp(6l), 32l, 0, new int[]{}, 0, 0));
-    n3versions.add(new OSMNode(125l, 1, new OSHDBTimestamp(1l), 31l, 0, new int[]{}, 0, 0));
+    n3versions.add(new OSMNode(125l, 3, OSHDB.timestamp(11l), 34l, 0, new int[]{}, 0, 0));
+    n3versions.add(new OSMNode(125l, 2, OSHDB.timestamp(6l), 32l, 0, new int[]{}, 0, 0));
+    n3versions.add(new OSMNode(125l, 1, OSHDB.timestamp(1l), 31l, 0, new int[]{}, 0, 0));
     OSHNode hnode3 = OSHNodeImpl.build(n3versions);
 
     List<OSMWay> w1versions = new ArrayList<>();
-    w1versions.add(new OSMWay(1, 3, new OSHDBTimestamp(7l), 4445l, 23, new int[]{}, new OSMMember[]{new OSMMember(123, OSMType.NODE, 0), new OSMMember(124, OSMType.NODE, 0)}));
-    w1versions.add(new OSMWay(1, 2, new OSHDBTimestamp(5l), 4444l, 23, new int[]{}, new OSMMember[]{new OSMMember(123, OSMType.NODE, 0), new OSMMember(124, OSMType.NODE, 0), new OSMMember(125, OSMType.NODE, 0)}));
-    w1versions.add(new OSMWay(1, 1, new OSHDBTimestamp(4l), 4443l, 23, new int[]{}, new OSMMember[]{new OSMMember(123, OSMType.NODE, 0), new OSMMember(124, OSMType.NODE, 0), new OSMMember(125, OSMType.NODE, 0)}));
+    w1versions.add(new OSMWay(1, 3, OSHDB.timestamp(7l), 4445l, 23, new int[]{}, new OSMMember[]{new OSMMember(123, OSMType.NODE, 0), new OSMMember(124, OSMType.NODE, 0)}));
+    w1versions.add(new OSMWay(1, 2, OSHDB.timestamp(5l), 4444l, 23, new int[]{}, new OSMMember[]{new OSMMember(123, OSMType.NODE, 0), new OSMMember(124, OSMType.NODE, 0), new OSMMember(125, OSMType.NODE, 0)}));
+    w1versions.add(new OSMWay(1, 1, OSHDB.timestamp(4l), 4443l, 23, new int[]{}, new OSMMember[]{new OSMMember(123, OSMType.NODE, 0), new OSMMember(124, OSMType.NODE, 0), new OSMMember(125, OSMType.NODE, 0)}));
     OSHWay hway1 = OSHWayImpl.build(w1versions, Arrays.asList(hnode1, hnode2, hnode3));
 
     List<OSMRelation> versions = new ArrayList<>();
-    versions.add(new OSMRelation(1, -4, new OSHDBTimestamp(20l), 10004l, 1, new int[]{}, new OSMMember[]{}));
-    versions.add(new OSMRelation(1, 3, new OSHDBTimestamp(10l), 10003l, 1, new int[]{1, 1, 2, 2}, new OSMMember[]{new OSMMember(1, OSMType.WAY, 0)}));
-    versions.add(new OSMRelation(1, 2, new OSHDBTimestamp(8l), 10002l, 1, new int[]{1, 1, 2, 2}, new OSMMember[]{new OSMMember(123, OSMType.NODE, 1)}));
-    versions.add(new OSMRelation(1, 1, new OSHDBTimestamp(5l), 10001l, 1, new int[]{1, 1, 2, 2}, new OSMMember[]{new OSMMember(1, OSMType.WAY, 0)}));
+    versions.add(new OSMRelation(1, -4, OSHDB.timestamp(20l), 10004l, 1, new int[]{}, new OSMMember[]{}));
+    versions.add(new OSMRelation(1, 3, OSHDB.timestamp(10l), 10003l, 1, new int[]{1, 1, 2, 2}, new OSMMember[]{new OSMMember(1, OSMType.WAY, 0)}));
+    versions.add(new OSMRelation(1, 2, OSHDB.timestamp(8l), 10002l, 1, new int[]{1, 1, 2, 2}, new OSMMember[]{new OSMMember(123, OSMType.NODE, 1)}));
+    versions.add(new OSMRelation(1, 1, OSHDB.timestamp(5l), 10001l, 1, new int[]{1, 1, 2, 2}, new OSMMember[]{new OSMMember(1, OSMType.WAY, 0)}));
     OSHRelation hrelation = OSHRelationImpl.build(versions, Arrays.asList(hnode1, hnode2, hnode3), Arrays.asList(hway1));
 
     List<OSHDBTimestamp> tss = OSHEntities.getModificationTimestamps(hrelation,false);
@@ -194,20 +195,20 @@ public class OSHRelationTest {
   @Test
   public void testGetModificationTimestampsWithFilter() throws IOException {
     List<OSMNode> n1versions = new ArrayList<>();
-    n1versions.add(new OSMNode(123l, 7, new OSHDBTimestamp(17l), 17l, 0, new int[]{}, 0, 0));
-    n1versions.add(new OSMNode(123l, 6, new OSHDBTimestamp(6l), 16l, 0, new int[]{}, 0, 0));
-    n1versions.add(new OSMNode(123l, 5, new OSHDBTimestamp(5l), 15l, 0, new int[]{}, 0, 0));
-    n1versions.add(new OSMNode(123l, 4, new OSHDBTimestamp(4l), 14l, 0, new int[]{}, 0, 0));
-    n1versions.add(new OSMNode(123l, 3, new OSHDBTimestamp(3l), 13l, 0, new int[]{}, 0, 0));
-    n1versions.add(new OSMNode(123l, 2, new OSHDBTimestamp(2l), 12l, 0, new int[]{}, 0, 0));
-    n1versions.add(new OSMNode(123l, 1, new OSHDBTimestamp(1l), 11l, 0, new int[]{}, 0, 0));
+    n1versions.add(new OSMNode(123l, 7, OSHDB.timestamp(17l), 17l, 0, new int[]{}, 0, 0));
+    n1versions.add(new OSMNode(123l, 6, OSHDB.timestamp(6l), 16l, 0, new int[]{}, 0, 0));
+    n1versions.add(new OSMNode(123l, 5, OSHDB.timestamp(5l), 15l, 0, new int[]{}, 0, 0));
+    n1versions.add(new OSMNode(123l, 4, OSHDB.timestamp(4l), 14l, 0, new int[]{}, 0, 0));
+    n1versions.add(new OSMNode(123l, 3, OSHDB.timestamp(3l), 13l, 0, new int[]{}, 0, 0));
+    n1versions.add(new OSMNode(123l, 2, OSHDB.timestamp(2l), 12l, 0, new int[]{}, 0, 0));
+    n1versions.add(new OSMNode(123l, 1, OSHDB.timestamp(1l), 11l, 0, new int[]{}, 0, 0));
     OSHNode hnode1 = OSHNodeImpl.build(n1versions);
 
     List<OSMRelation> versions = new ArrayList<>();
-    versions.add(new OSMRelation(1, -4, new OSHDBTimestamp(6l), 10004l, 1, new int[]{}, new OSMMember[]{}));
-    versions.add(new OSMRelation(1, 3, new OSHDBTimestamp(5l), 10003l, 1, new int[]{}, new OSMMember[]{new OSMMember(123, OSMType.NODE, 0)}));
-    versions.add(new OSMRelation(1, 2, new OSHDBTimestamp(3l), 10002l, 1, new int[]{}, new OSMMember[]{new OSMMember(123, OSMType.NODE, 1)}));
-    versions.add(new OSMRelation(1, 1, new OSHDBTimestamp(1l), 10001l, 1, new int[]{}, new OSMMember[]{new OSMMember(123, OSMType.NODE, 0)}));
+    versions.add(new OSMRelation(1, -4, OSHDB.timestamp(6l), 10004l, 1, new int[]{}, new OSMMember[]{}));
+    versions.add(new OSMRelation(1, 3, OSHDB.timestamp(5l), 10003l, 1, new int[]{}, new OSMMember[]{new OSMMember(123, OSMType.NODE, 0)}));
+    versions.add(new OSMRelation(1, 2, OSHDB.timestamp(3l), 10002l, 1, new int[]{}, new OSMMember[]{new OSMMember(123, OSMType.NODE, 1)}));
+    versions.add(new OSMRelation(1, 1, OSHDB.timestamp(1l), 10001l, 1, new int[]{}, new OSMMember[]{new OSMMember(123, OSMType.NODE, 0)}));
     OSHRelation hrelation = OSHRelationImpl.build(versions, Arrays.asList(hnode1), Arrays.asList());
 
     List<OSHDBTimestamp> tss = OSHEntities.getModificationTimestamps(
@@ -246,7 +247,7 @@ public class OSHRelationTest {
   @Test
   public void testToString() throws IOException {
     List<OSMRelation> versions = new ArrayList<>();
-    versions.add(new OSMRelation(300, 1, new OSHDBTimestamp(3333l), 4444l, 23, new int[]{}, new OSMMember[]{new OSMMember(100, OSMType.NODE, 0), new OSMMember(102, OSMType.NODE, 0), new OSMMember(104, OSMType.NODE, 0)}));
+    versions.add(new OSMRelation(300, 1, OSHDB.timestamp(3333l), 4444l, 23, new int[]{}, new OSMMember[]{new OSMMember(100, OSMType.NODE, 0), new OSMMember(102, OSMType.NODE, 0), new OSMMember(104, OSMType.NODE, 0)}));
 
     OSHRelation instance = OSHRelationImpl.build(versions, Arrays.asList(node100, node102, node104), Collections.emptyList());
     String expResult = "OSHRelation ID:300 Vmax:+1+ Creation:3333 BBox:(8.680973,49.409498),(8.680973,49.409498)";

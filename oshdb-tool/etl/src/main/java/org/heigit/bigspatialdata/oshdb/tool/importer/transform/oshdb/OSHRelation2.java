@@ -3,13 +3,12 @@ package org.heigit.bigspatialdata.oshdb.tool.importer.transform.oshdb;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
-
+import org.heigit.bigspatialdata.oshdb.OSHDB;
 import org.heigit.bigspatialdata.oshdb.osm.OSMEntity;
 import org.heigit.bigspatialdata.oshdb.osm.OSMMember;
 import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.util.bytearray.ByteArrayOutputWrapper;
 
 public abstract class OSHRelation2 extends OSHEntity2 implements OSH<OSMRelation> {
@@ -125,7 +124,7 @@ public abstract class OSHRelation2 extends OSHEntity2 implements OSH<OSMRelation
             
           }
         }
-        return new OSMRelation(entity.id, version, new OSHDBTimestamp(entity.baseTimestamp + timestamp), changeset, userId, keyValues,
+        return new OSMRelation(entity.id, version, OSHDB.timestamp(entity.baseTimestamp + timestamp), changeset, userId, keyValues,
             members);
       } catch (IOException e) {
         throw new RuntimeException(e);

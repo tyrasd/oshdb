@@ -6,6 +6,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 import java.util.stream.Collectors;
+import org.heigit.bigspatialdata.oshdb.OSHDB;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,14 +134,14 @@ public class OSHDBTimestamps implements OSHDBTimestampList {
   public SortedSet<OSHDBTimestamp> get() {
     if (period != null) {
       return new TreeSet<>(
-          _getTimestampsAsEpochSeconds(start, end, period, fromEnd).stream().map(OSHDBTimestamp::new).collect(Collectors.toList())
+          _getTimestampsAsEpochSeconds(start, end, period, fromEnd).stream().map(OSHDB::timestamp).collect(Collectors.toList())
       );
     } else {
       SortedSet<OSHDBTimestamp> timestamps = new TreeSet<>();
       try {
-        timestamps.add(new OSHDBTimestamp(ISODateTimeParser.parseISODateTime(start).toEpochSecond()));
+        timestamps.add(OSHDB.timestamp(ISODateTimeParser.parseISODateTime(start).toEpochSecond()));
         if (start.equals(end)) return timestamps;
-        timestamps.add(new OSHDBTimestamp(ISODateTimeParser.parseISODateTime(end).toEpochSecond()));
+        timestamps.add(OSHDB.timestamp(ISODateTimeParser.parseISODateTime(end).toEpochSecond()));
       } catch (Exception e) {
         LOG.error("Unable to parse timestamp string, skipping: " + e.getMessage());
       }

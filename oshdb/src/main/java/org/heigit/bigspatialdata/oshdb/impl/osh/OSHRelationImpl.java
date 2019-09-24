@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.heigit.bigspatialdata.oshdb.OSHDB;
 import org.heigit.bigspatialdata.oshdb.osh.OSHEntities;
 import org.heigit.bigspatialdata.oshdb.osh.OSHEntity;
 import org.heigit.bigspatialdata.oshdb.osh.OSHNode;
@@ -25,7 +26,6 @@ import org.heigit.bigspatialdata.oshdb.osm.OSMNode;
 import org.heigit.bigspatialdata.oshdb.osm.OSMRelation;
 import org.heigit.bigspatialdata.oshdb.osm.OSMType;
 import org.heigit.bigspatialdata.oshdb.util.OSHDBBoundingBox;
-import org.heigit.bigspatialdata.oshdb.util.OSHDBTimestamp;
 import org.heigit.bigspatialdata.oshdb.util.bytearray.ByteArrayOutputWrapper;
 import org.heigit.bigspatialdata.oshdb.util.bytearray.ByteArrayWrapper;
 
@@ -257,7 +257,7 @@ public class OSHRelationImpl extends OSHEntityImpl implements OSHRelation, Itera
                 members[i] = new OSMMember(memberId, memberType, memberRole, member);
               }
             }
-            return new OSMRelation(id, version, new OSHDBTimestamp(baseTimestamp + timestamp),
+            return new OSMRelation(id, version, OSHDB.timestamp(baseTimestamp + timestamp),
                 changeset, userId, keyValues, members);
           } catch (IOException e) {
             e.printStackTrace();
