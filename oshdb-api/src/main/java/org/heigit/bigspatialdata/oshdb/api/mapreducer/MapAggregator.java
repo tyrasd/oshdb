@@ -66,9 +66,11 @@ import org.locationtech.jts.geom.Polygonal;
  * @param <U> the type of the index values returned by the `mapper function`, used to group results
  */
 public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
-    Mappable<X>, MapReducerSettings<MapAggregator<U, X>>, MapReducerAggregations<X> {
+    Mappable<X>, MapReducerSettings<MapAggregator<U, X>>, MapAggregatorAggregations<U,X> {
+
   private MapReducer<IndexValuePair<U, X>> mapReducer;
   private final List<Collection<? extends Comparable>> zerofill;
+  private boolean zerofilling = true;
 
   /**
    * Basic constructor.
@@ -96,6 +98,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
   private MapAggregator(MapAggregator<U, ?> obj, MapReducer<IndexValuePair<U, X>> mapReducer) {
     this.mapReducer = mapReducer;
     this.zerofill = new ArrayList<>(obj.zerofill);
+    this.zerofilling = obj.zerofilling;
   }
 
   /**
@@ -223,6 +226,11 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
       //noinspection unchecked – no mapper functions have been applied, so the type is still X
       return (MapAggregator<OSHDBCombinedIndex<U, V>, X>) ret;
     }
+  }
+
+  public MapAggregatorAggregations<U,X> noZerofilling() {
+    this.zerofilling = false;
+    return this;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -365,24 +373,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
   // not aggregated totals.
   // -----------------------------------------------------------------------------------------------
 
-  /**
-   * Sums up the results.
-   *
-   * <p>The current data values need to be numeric (castable to "Number" type), otherwise a
-   * runtime exception will be thrown.</p>
-   *
-   * @return the sum of the current data
-   * @throws UnsupportedOperationException if the data cannot be cast to numbers
-   */
-  @Contract(pure = true)
-  public SortedMap<U, Number> sum() throws Exception {
-    return this
-        .makeNumeric()
-        .reduce(
-            () -> 0,
-            NumberUtils::add
-        );
-  }
+
 
   /**
    * Sums up the results provided by a given `mapper` function.
@@ -403,16 +394,6 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
             () -> (R) (Integer) 0,
             NumberUtils::add
         );
-  }
-
-  /**
-   * Counts the number of results.
-   *
-   * @return the total count of features or modifications, summed up over all timestamps
-   */
-  @Contract(pure = true)
-  public SortedMap<U, Integer> count() throws Exception {
-    return this.sum(ignored -> 1);
   }
 
   /**
@@ -460,35 +441,6 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
   }
 
   /**
-   * Calculates the averages of the results.
-   *
-   * <p>The current data values need to be numeric (castable to "Number" type), otherwise a runtime
-   * exception will be thrown.</p>
-   *
-   * @return the average of the current data
-   * @throws UnsupportedOperationException if the data cannot be cast to numbers
-   */
-  @Contract(pure = true)
-  public SortedMap<U, Double> average() throws Exception {
-    return this
-        .makeNumeric()
-        .average(n -> n);
-  }
-
-  /**
-   * Calculates the average of the results provided by a given `mapper` function.
-   *
-   * @param mapper function that returns the numbers to average
-   * @param <R> the numeric type that is returned by the `mapper` function
-   * @return the average of the numbers returned by the `mapper` function
-   */
-  @Contract(pure = true)
-  public <R extends Number> SortedMap<U, Double> average(SerializableFunction<X, R> mapper)
-      throws Exception {
-    return this.weightedAverage(data -> new WeightedValue<>(mapper.apply(data), 1.0));
-  }
-
-  /**
    * Calculates the weighted average of the results provided by the `mapper` function.
    *
    * <p>The mapper must return an object of the type `WeightedValue` which contains a numeric
@@ -509,38 +461,6 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
         ),
         x -> x.num / x.weight
     );
-  }
-
-  /**
-   * Returns an estimate of the median of the results.
-   *
-   * <p>
-   * Uses the t-digest algorithm to calculate estimates for the quantiles in a map-reduce system:
-   * https://raw.githubusercontent.com/tdunning/t-digest/master/docs/t-digest-paper/histo.pdf
-   * </p>
-   *
-   * @return estimated median
-   */
-  @Contract(pure = true)
-  public SortedMap<U, Double> estimatedMedian() throws Exception {
-    return this.estimatedQuantile(0.5);
-  }
-
-  /**
-   * Returns an estimate of the median of the results after applying the given map function.
-   *
-   * <p>
-   * Uses the t-digest algorithm to calculate estimates for the quantiles in a map-reduce system:
-   * https://raw.githubusercontent.com/tdunning/t-digest/master/docs/t-digest-paper/histo.pdf
-   * </p>
-   *
-   * @param mapper function that returns the numbers to generate the mean for
-   * @return estimated median
-   */
-  @Contract(pure = true)
-  public <R extends Number> SortedMap<U, Double> estimatedMedian(SerializableFunction<X, R> mapper)
-      throws Exception {
-    return this.estimatedQuantile(mapper, 0.5);
   }
 
   /**
@@ -694,20 +614,6 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
   @Deprecated
   public void forEach(SerializableBiConsumer<U, List<X>> action) throws Exception {
     this.collect().forEach(action);
-  }
-
-  /**
-   * Collects the results of this data aggregation into Lists.
-   *
-   * @return an aggregated map of lists with all results
-   */
-  @Contract(pure = true)
-  public SortedMap<U, List<X>> collect() throws Exception {
-    return this.reduce(
-        MapReducer::collectIdentitySupplier,
-        MapReducer::collectAccumulator,
-        MapReducer::collectCombiner
-    );
   }
 
   /**
@@ -867,6 +773,10 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
           return combined;
         }
     );
+
+    if(!zerofilling)
+      return result;
+
     // fill nodata entries with "0"
     //noinspection unchecked – all zerofills must "add up" to <U>
     Collection<U> zerofill = (Collection<U>) this.completeZerofill(
@@ -879,57 +789,6 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
       }
     });
     return result;
-  }
-
-  /**
-   * Map-reduce routine with built-in aggregation (shorthand syntax).
-   * <p>
-   * This can be used to perform an arbitrary reduce routine whose results are aggregated
-   * separately according to some custom index value.
-   * </p>
-   *
-   * <p>
-   * This variant is shorter to program than `reduce(identitySupplier, accumulator, combiner)`,
-   * but can only be used if the result type is the same as the current `map`ped type &lt;X&gt;.
-   * Also this variant can be less efficient since it cannot benefit from the mutability freedoms
-   * the accumulator+combiner approach has.
-   * </p>
-   *
-   * <p>
-   * The combination of the used types and identity/reducer functions must make "mathematical"
-   * sense:
-   * </p>
-   * <ul>
-   *   <li>the accumulator and combiner functions need to be associative,</li>
-   *   <li>values generated by the identitySupplier factory must be an identity for the combiner
-   *   function: `combiner(identitySupplier(),x)` must be equal to `x`,</li>
-   *   <li>the combiner function must be compatible with the accumulator function:
-   *   `combiner(u, accumulator(identitySupplier(), t)) == accumulator.apply(u, t)`</li>
-   * </ul>
-   *
-   * <p>
-   * Functionally, this interface is similar to Java8 Stream's <a
-   * href="https://docs.oracle.com/javase/8/docs/api/java/util/stream/Stream.html#reduce-U-java.util.function.BiFunction-java.util.function.BinaryOperator-">reduce(identity,accumulator,combiner)</a>
-   * interface.
-   * </p>
-   *
-   * @param identitySupplier a factory function that returns a new starting value to reduce results
-   *        into (e.g. when summing values, one needs to start at zero)
-   * @param accumulator a function that takes a result from the `mapper` function (type &lt;X&gt;)
-   *        and an accumulation value (also of type &lt;X&gt;, e.g. the result of
-   *        `identitySupplier()`) and returns the "sum" of the two; contrary to `combiner`, this
-   *        function is not to alter (mutate) the state of the accumulation value (e.g. directly
-   *        adding new values to an existing Set object)
-   * @return the result of the map-reduce operation, the final result of the last call to the
-   *         `combiner` function, after all `mapper` results have been aggregated (in the
-   *         `accumulator` and `combiner` steps)
-   */
-  @Contract(pure = true)
-  public SortedMap<U, X> reduce(
-      SerializableSupplier<X> identitySupplier,
-      SerializableBinaryOperator<X> accumulator
-  ) throws Exception {
-    return this.reduce(identitySupplier, accumulator::apply, accumulator);
   }
 
   // -----------------------------------------------------------------------------------------------
