@@ -2,6 +2,7 @@ package org.heigit.bigspatialdata.oshdb.api.mapreducer;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedMap;
 import org.heigit.bigspatialdata.oshdb.api.generic.NumberUtils;
 import org.heigit.bigspatialdata.oshdb.api.generic.WeightedValue;
@@ -72,6 +73,23 @@ public interface MapAggregatorAggregations<U extends Comparable<U> & Serializabl
   @Contract(pure = true)
   default SortedMap<U, Integer> count() throws Exception {
     return (SortedMap<U, Integer>) sum(ignored -> 1);
+  }
+
+  /**
+   * Gets all unique values of the results.
+   *
+   * <p>For example, this can be used together with the OSMContributionView to get the total
+   * amount of unique users editing specific feature types.</p>
+   *
+   * @return the set of distinct values
+   */
+  @Contract(pure = true)
+  default SortedMap<U, Set<X>> uniq() throws Exception {
+    return (SortedMap<U, Set<X>>) this.reduce(
+        MapReducer::uniqIdentitySupplier,
+        MapReducer::uniqAccumulator,
+        MapReducer::uniqCombiner
+    );
   }
 
   /**
@@ -161,4 +179,7 @@ public interface MapAggregatorAggregations<U extends Comparable<U> & Serializabl
     );
   }
 
+  MapAggregatorAggregations<U,X> noZerofilling();
+
+  MapAggregatorAggregations<U,X> zerofilling();
 }

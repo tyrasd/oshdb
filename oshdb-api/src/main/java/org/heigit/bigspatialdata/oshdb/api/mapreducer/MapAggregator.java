@@ -228,10 +228,20 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
     }
   }
 
+  @Override
   public MapAggregatorAggregations<U,X> noZerofilling() {
-    this.zerofilling = false;
-    return this;
+    MapAggregator<U,X> ret = new MapAggregator<>(this, mapReducer);
+    ret.zerofilling = false;
+    return ret;
   }
+
+  @Override
+  public MapAggregatorAggregations<U,X> zerofilling() {
+    MapAggregator<U,X> ret = new MapAggregator<>(this, mapReducer);
+    ret.zerofilling = true;
+    return ret;
+  }
+
 
   // -----------------------------------------------------------------------------------------------
   // Filtering methods
@@ -394,23 +404,6 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
             () -> (R) (Integer) 0,
             NumberUtils::add
         );
-  }
-
-  /**
-   * Gets all unique values of the results.
-   *
-   * <p>For example, this can be used together with the OSMContributionView to get the total
-   * amount of unique users editing specific feature types.</p>
-   *
-   * @return the set of distinct values
-   */
-  @Contract(pure = true)
-  public SortedMap<U, Set<X>> uniq() throws Exception {
-    return this.reduce(
-        MapReducer::uniqIdentitySupplier,
-        MapReducer::uniqAccumulator,
-        MapReducer::uniqCombiner
-    );
   }
 
   /**
