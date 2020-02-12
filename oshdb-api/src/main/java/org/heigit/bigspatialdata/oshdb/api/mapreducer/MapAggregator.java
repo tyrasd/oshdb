@@ -229,6 +229,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
   }
 
   @Override
+  @Contract(pure = true)
   public MapAggregatorAggregations<U,X> noZerofilling() {
     MapAggregator<U,X> ret = new MapAggregator<>(this, mapReducer);
     ret.zerofilling = false;
@@ -236,6 +237,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
   }
 
   @Override
+  @Contract(pure = true)
   public MapAggregatorAggregations<U,X> zerofilling() {
     MapAggregator<U,X> ret = new MapAggregator<>(this, mapReducer);
     ret.zerofilling = true;

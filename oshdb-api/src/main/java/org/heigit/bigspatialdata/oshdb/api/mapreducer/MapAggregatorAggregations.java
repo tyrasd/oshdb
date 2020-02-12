@@ -175,6 +175,19 @@ public interface MapAggregatorAggregations<U extends Comparable<U> & Serializabl
     return sum(ignored -> 1);
   }
 
+
+  /**
+   * Gets all unique values of the results provided by a given mapper function.
+   *
+   * <p>This is a shorthand for `.map(mapper).uniq()`.</p>
+   *
+   * @param mapper function that returns some values
+   * @param <R> the type that is returned by the `mapper` function
+   * @return a set of distinct values returned by the `mapper` function
+   */
+  @Contract(pure = true)
+  <R> SortedMap<U, Set<R>> uniq(SerializableFunction<X, R> mapper) throws Exception;
+
   /**
    * Gets all unique values of the results.
    *
