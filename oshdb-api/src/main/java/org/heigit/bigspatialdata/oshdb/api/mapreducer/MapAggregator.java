@@ -395,6 +395,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
    * @param <R> the numeric type that is returned by the `mapper` function
    * @return the summed up results of the `mapper` function
    */
+  @Override
   @Contract(pure = true)
   public <R extends Number> SortedMap<U, R> sum(SerializableFunction<X, R> mapper)
       throws Exception {
@@ -415,6 +416,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
    * @param <R> the type that is returned by the `mapper` function
    * @return a set of distinct values returned by the `mapper` function
    */
+  @Override
   @Contract(pure = true)
   public <R> SortedMap<U, Set<R>> uniq(SerializableFunction<X, R> mapper) throws Exception {
     return this.map(mapper).uniq();
@@ -428,6 +430,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
    *
    * @return the set of distinct values
    */
+  @Override
   @Contract(pure = true)
   public SortedMap<U, Integer> countUniq() throws Exception {
     return transformSortedMap(this.uniq(), Set::size);
@@ -443,6 +446,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
    *        return the value and weight combination of numbers to average
    * @return the weighted average of the numbers returned by the `mapper` function
    */
+  @Override
   @Contract(pure = true)
   public SortedMap<U, Double> weightedAverage(SerializableFunction<X, WeightedValue> mapper)
       throws Exception {
@@ -467,6 +471,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
    * @param q the desired quantile to calculate (as a number between 0 and 1)
    * @return estimated quantile boundary
    */
+  @Override
   @Contract(pure = true)
   public SortedMap<U, Double> estimatedQuantile(double q) throws Exception {
     return this.makeNumeric().estimatedQuantile(n -> n, q);
@@ -485,6 +490,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
    * @param q the desired quantile to calculate (as a number between 0 and 1)
    * @return estimated quantile boundary
    */
+  @Override
   @Contract(pure = true)
   public <R extends Number> SortedMap<U, Double> estimatedQuantile(
       SerializableFunction<X, R> mapper,
@@ -507,6 +513,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
    * @param q the desired quantiles to calculate (as a collection of numbers between 0 and 1)
    * @return estimated quantile boundaries
    */
+  @Override
   @Contract(pure = true)
   public SortedMap<U, List<Double>> estimatedQuantiles(Iterable<Double> q) throws Exception {
     return this.makeNumeric().estimatedQuantiles(n -> n, q);
@@ -524,6 +531,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
    * @param q the desired quantiles to calculate (as a collection of numbers between 0 and 1)
    * @return estimated quantile boundaries
    */
+  @Override
   @Contract(pure = true)
   public <R extends Number> SortedMap<U, List<Double>> estimatedQuantiles(
       SerializableFunction<X, R> mapper,
@@ -549,6 +557,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
    *
    * @return a function that computes estimated quantile boundaries
    */
+  @Override
   @Contract(pure = true)
   public SortedMap<U, DoubleUnaryOperator> estimatedQuantiles() throws Exception {
     return this.makeNumeric().estimatedQuantiles(n -> n);
@@ -566,6 +575,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
    * @param mapper function that returns the numbers to generate the quantiles for
    * @return a function that computes estimated quantile boundaries
    */
+  @Override
   @Contract(pure = true)
   public <R extends Number> SortedMap<U, DoubleUnaryOperator> estimatedQuantiles(
       SerializableFunction<X, R> mapper
@@ -614,6 +624,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
    *
    * @return a stream with all results returned by the `mapper` function
    */
+  @Override
   @Contract(pure = true)
   public Stream<Entry<U, X>> stream() throws Exception {
     return this.mapReducer.stream().map(d -> new Entry<U, X>() {
@@ -743,6 +754,7 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
    *         `combiner` function, after all `mapper` results have been aggregated (in the
    *         `accumulator` and `combiner` steps)
    */
+  @Override
   @Contract(pure = true)
   public <S> SortedMap<U, S> reduce(
       SerializableSupplier<S> identitySupplier,
