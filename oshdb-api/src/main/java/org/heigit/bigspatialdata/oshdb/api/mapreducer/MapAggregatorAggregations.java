@@ -256,21 +256,6 @@ public interface MapAggregatorAggregations<U extends Comparable<U> & Serializabl
     return average(MapReducer::checkAndMapToNumeric);
   }
 
-
-  /**
-   * Returns an estimate of a requested quantile of the results.
-   *
-   * <p>
-   * Uses the t-digest algorithm to calculate estimates for the quantiles in a map-reduce system:
-   * https://raw.githubusercontent.com/tdunning/t-digest/master/docs/t-digest-paper/histo.pdf
-   * </p>
-   *
-   * @param q the desired quantile to calculate (as a number between 0 and 1)
-   * @return estimated quantile boundary
-   */
-  @Contract(pure = true)
-  SortedMap<U, Double> estimatedQuantile(double q) throws Exception;
-
   /**
    * Returns an estimate of a requested quantile of the results after applying the given map
    * function.
@@ -291,6 +276,22 @@ public interface MapAggregatorAggregations<U extends Comparable<U> & Serializabl
   ) throws Exception;
 
   /**
+   * Returns an estimate of a requested quantile of the results.
+   *
+   * <p>
+   * Uses the t-digest algorithm to calculate estimates for the quantiles in a map-reduce system:
+   * https://raw.githubusercontent.com/tdunning/t-digest/master/docs/t-digest-paper/histo.pdf
+   * </p>
+   *
+   * @param q the desired quantile to calculate (as a number between 0 and 1)
+   * @return estimated quantile boundary
+   */
+  @Contract(pure = true)
+  default SortedMap<U, Double> estimatedQuantile(double q) throws Exception {
+    return estimatedQuantile(MapReducer::checkAndMapToNumeric, q);
+  }
+
+  /**
    * Returns a function that computes estimates of arbitrary quantiles of the results after applying
    * the given map function.
    *
@@ -308,18 +309,19 @@ public interface MapAggregatorAggregations<U extends Comparable<U> & Serializabl
   ) throws Exception;
 
   /**
-   * Returns an estimate of the quantiles of the results.
+   * Returns a function that computes estimates of arbitrary quantiles of the results.
    *
    * <p>
    * Uses the t-digest algorithm to calculate estimates for the quantiles in a map-reduce system:
    * https://raw.githubusercontent.com/tdunning/t-digest/master/docs/t-digest-paper/histo.pdf
    * </p>
    *
-   * @param q the desired quantiles to calculate (as a collection of numbers between 0 and 1)
-   * @return estimated quantile boundaries
+   * @return a function that computes estimated quantile boundaries
    */
   @Contract(pure = true)
-  SortedMap<U, List<Double>> estimatedQuantiles(Iterable<Double> q) throws Exception;
+  default SortedMap<U, DoubleUnaryOperator> estimatedQuantiles() throws Exception {
+    return estimatedQuantiles(MapReducer::checkAndMapToNumeric);
+  }
 
   /**
    * Returns an estimate of the quantiles of the results after applying the given map function.
@@ -340,18 +342,20 @@ public interface MapAggregatorAggregations<U extends Comparable<U> & Serializabl
   ) throws Exception;
 
   /**
-   * Returns a function that computes estimates of arbitrary quantiles of the results.
+   * Returns an estimate of the quantiles of the results.
    *
    * <p>
    * Uses the t-digest algorithm to calculate estimates for the quantiles in a map-reduce system:
    * https://raw.githubusercontent.com/tdunning/t-digest/master/docs/t-digest-paper/histo.pdf
    * </p>
    *
-   * @return a function that computes estimated quantile boundaries
+   * @param q the desired quantiles to calculate (as a collection of numbers between 0 and 1)
+   * @return estimated quantile boundaries
    */
   @Contract(pure = true)
-  SortedMap<U, DoubleUnaryOperator> estimatedQuantiles() throws Exception;
-
+  default SortedMap<U, List<Double>> estimatedQuantiles(Iterable<Double> q) throws Exception {
+    return estimatedQuantiles(MapReducer::checkAndMapToNumeric, q);
+  }
 
   /**
    * Returns an estimate of the median of the results.
@@ -385,8 +389,17 @@ public interface MapAggregatorAggregations<U extends Comparable<U> & Serializabl
     return estimatedQuantile(mapper, 0.5);
   }
 
-
+  /**
+   *  Deactivates zerofilling of missing values
+   *
+   * @return a modified copy of this MapAggregator with limitation to MapAggregatorAggregations
+   */
   MapAggregatorAggregations<U,X> noZerofilling();
 
+  /**
+   *  Activates zerofilling of missing values
+   *
+   * @return a modified copy of this MapAggregator with limitation to MapAggregatorAggregations
+   */
   MapAggregatorAggregations<U,X> zerofilling();
 }

@@ -385,18 +385,6 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
   // not aggregated totals.
   // -----------------------------------------------------------------------------------------------
 
-
-
-  /**
-   * Sums up the results provided by a given `mapper` function.
-   *
-   * <p>This is a shorthand for `.map(mapper).sum()`, with the difference that here the numerical
-   * return type of the `mapper` is ensured.</p>
-   *
-   * @param mapper function that returns the numbers to sum up
-   * @param <R> the numeric type that is returned by the `mapper` function
-   * @return the summed up results of the `mapper` function
-   */
   @Override
   @Contract(pure = true)
   public <R extends Number> SortedMap<U, R> sum(SerializableFunction<X, R> mapper)
@@ -409,45 +397,18 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
         );
   }
 
-  /**
-   * Gets all unique values of the results provided by a given mapper function.
-   *
-   * <p>This is a shorthand for `.map(mapper).uniq()`.</p>
-   *
-   * @param mapper function that returns some values
-   * @param <R> the type that is returned by the `mapper` function
-   * @return a set of distinct values returned by the `mapper` function
-   */
   @Override
   @Contract(pure = true)
   public <R> SortedMap<U, Set<R>> uniq(SerializableFunction<X, R> mapper) throws Exception {
     return this.map(mapper).uniq();
   }
 
-  /**
-   * Counts all unique values of the results.
-   *
-   * <p>For example, this can be used together with the OSMContributionView to get the number of
-   * unique users editing specific feature types.</p>
-   *
-   * @return the set of distinct values
-   */
   @Override
   @Contract(pure = true)
   public SortedMap<U, Integer> countUniq() throws Exception {
     return transformSortedMap(this.uniq(), Set::size);
   }
 
-  /**
-   * Calculates the weighted average of the results provided by the `mapper` function.
-   *
-   * <p>The mapper must return an object of the type `WeightedValue` which contains a numeric
-   * value associated with a (floating point) weight.</p>
-   *
-   * @param mapper function that gets called for each entity snapshot or modification, needs to
-   *        return the value and weight combination of numbers to average
-   * @return the weighted average of the numbers returned by the `mapper` function
-   */
   @Override
   @Contract(pure = true)
   public SortedMap<U, Double> weightedAverage(SerializableFunction<X, WeightedValue> mapper)
@@ -462,36 +423,6 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
     );
   }
 
-  /**
-   * Returns an estimate of a requested quantile of the results.
-   *
-   * <p>
-   * Uses the t-digest algorithm to calculate estimates for the quantiles in a map-reduce system:
-   * https://raw.githubusercontent.com/tdunning/t-digest/master/docs/t-digest-paper/histo.pdf
-   * </p>
-   *
-   * @param q the desired quantile to calculate (as a number between 0 and 1)
-   * @return estimated quantile boundary
-   */
-  @Override
-  @Contract(pure = true)
-  public SortedMap<U, Double> estimatedQuantile(double q) throws Exception {
-    return this.makeNumeric().estimatedQuantile(n -> n, q);
-  }
-
-  /**
-   * Returns an estimate of a requested quantile of the results after applying the given map
-   * function.
-   *
-   * <p>
-   * Uses the t-digest algorithm to calculate estimates for the quantiles in a map-reduce system:
-   * https://raw.githubusercontent.com/tdunning/t-digest/master/docs/t-digest-paper/histo.pdf
-   * </p>
-   *
-   * @param mapper function that returns the numbers to generate the quantile for
-   * @param q the desired quantile to calculate (as a number between 0 and 1)
-   * @return estimated quantile boundary
-   */
   @Override
   @Contract(pure = true)
   public <R extends Number> SortedMap<U, Double> estimatedQuantile(
@@ -504,35 +435,6 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
     );
   }
 
-  /**
-   * Returns an estimate of the quantiles of the results.
-   *
-   * <p>
-   * Uses the t-digest algorithm to calculate estimates for the quantiles in a map-reduce system:
-   * https://raw.githubusercontent.com/tdunning/t-digest/master/docs/t-digest-paper/histo.pdf
-   * </p>
-   *
-   * @param q the desired quantiles to calculate (as a collection of numbers between 0 and 1)
-   * @return estimated quantile boundaries
-   */
-  @Override
-  @Contract(pure = true)
-  public SortedMap<U, List<Double>> estimatedQuantiles(Iterable<Double> q) throws Exception {
-    return this.makeNumeric().estimatedQuantiles(n -> n, q);
-  }
-
-  /**
-   * Returns an estimate of the quantiles of the results after applying the given map function.
-   *
-   * <p>
-   * Uses the t-digest algorithm to calculate estimates for the quantiles in a map-reduce system:
-   * https://raw.githubusercontent.com/tdunning/t-digest/master/docs/t-digest-paper/histo.pdf
-   * </p>
-   *
-   * @param mapper function that returns the numbers to generate the quantiles for
-   * @param q the desired quantiles to calculate (as a collection of numbers between 0 and 1)
-   * @return estimated quantile boundaries
-   */
   @Override
   @Contract(pure = true)
   public <R extends Number> SortedMap<U, List<Double>> estimatedQuantiles(
@@ -549,34 +451,6 @@ public class MapAggregator<U extends Comparable<U> & Serializable, X> implements
     );
   }
 
-  /**
-   * Returns a function that computes estimates of arbitrary quantiles of the results.
-   *
-   * <p>
-   * Uses the t-digest algorithm to calculate estimates for the quantiles in a map-reduce system:
-   * https://raw.githubusercontent.com/tdunning/t-digest/master/docs/t-digest-paper/histo.pdf
-   * </p>
-   *
-   * @return a function that computes estimated quantile boundaries
-   */
-  @Override
-  @Contract(pure = true)
-  public SortedMap<U, DoubleUnaryOperator> estimatedQuantiles() throws Exception {
-    return this.makeNumeric().estimatedQuantiles(n -> n);
-  }
-
-  /**
-   * Returns a function that computes estimates of arbitrary quantiles of the results after applying
-   * the given map function.
-   *
-   * <p>
-   * Uses the t-digest algorithm to calculate estimates for the quantiles in a map-reduce system:
-   * https://raw.githubusercontent.com/tdunning/t-digest/master/docs/t-digest-paper/histo.pdf
-   * </p>
-   *
-   * @param mapper function that returns the numbers to generate the quantiles for
-   * @return a function that computes estimated quantile boundaries
-   */
   @Override
   @Contract(pure = true)
   public <R extends Number> SortedMap<U, DoubleUnaryOperator> estimatedQuantiles(
